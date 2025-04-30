@@ -26,7 +26,7 @@ import { connect } from 'react-redux';
 import { reviewRole } from '../../redux/thunks/roles';
 import produce from 'immer';
 import DeleteModal from '../modal/DeleteModal';
-import CollectionUtils from 'lodash';
+import { domainExpirationIsConfigured, roleExpirationIsConfigured } from '../utils/ReviewUtils';
 
 const TitleDiv = styled.div`
     font-size: 16px;
@@ -231,70 +231,62 @@ export class ReviewTable extends React.Component {
     }
 
     getDefaultExpiryText() {
+        const { roleDetails, domainExpiration } = this.props;
         let text = 'Current default settings are - ';
-        let noDaysConfigured = true;
-        if (this.props.roleDetails && this.props.roleDetails.memberExpiryDays) {
-            text =
-                text +
-                'Member Expiry: ' +
-                this.props.roleDetails.memberExpiryDays +
-                ' days. ';
-            noDaysConfigured = false;
+
+        if (roleDetails?.memberExpiryDays) {
+            text += `Member Expiry: ${roleDetails.memberExpiryDays} days. `;
         }
-        if (
-            this.props.roleDetails &&
-            this.props.roleDetails.serviceExpiryDays
+
+        if (roleDetails?.serviceExpiryDays) {
+            text += `Service Expiry: ${roleDetails.serviceExpiryDays} days. `;
+        }
+
+        if (roleDetails?.groupExpiryDays) {
+            text += `Group Expiry: ${roleDetails.groupExpiryDays} days. `;
+        }
+
+        if (roleDetails?.memberReviewDays) {
+            text += `Member Review: ${roleDetails.memberReviewDays} days. `;
+        }
+
+        if (roleDetails?.serviceReviewDays) {
+            text += `Service Review: ${roleDetails.serviceReviewDays} days. `;
+        }
+
+        if (roleDetails?.groupReviewDays) {
+            text += `Group Review: ${roleDetails.groupReviewDays} days. `;
+        }
+
+        // if role expiration is not configured, default to domain expiration
+        if (!roleExpirationIsConfigured(roleDetails) &&
+            domainExpirationIsConfigured(domainExpiration)) {
+            text = 'Current domain settings are - ';
+
+            if (domainExpiration.memberExpiryDays) {
+                text += `Domain Member Expiry: ${domainExpiration.memberExpiryDays} days. `;
+            }
+
+            if (domainExpiration.serviceExpiryDays) {
+                text += `Domain Service Expiry: ${domainExpiration.serviceExpiryDays} days. `;
+            }
+
+            if (domainExpiration.groupExpiryDays) {
+                text += `Domain Group Expiry: ${domainExpiration.groupExpiryDays} days. `;
+            }
+        }
+
+        // if neither role nor domain expiration settings are configured
+        if (!roleExpirationIsConfigured(roleDetails) &&
+            !domainExpirationIsConfigured(domainExpiration)
         ) {
-            text =
-                text +
-                'Service Expiry: ' +
-                this.props.roleDetails.serviceExpiryDays +
-                ' days. ';
-            noDaysConfigured = false;
-        }
-        if (this.props.roleDetails && this.props.roleDetails.groupExpiryDays) {
-            text =
-                text +
-                'Group Expiry: ' +
-                this.props.roleDetails.groupExpiryDays +
-                ' days. ';
-            noDaysConfigured = false;
-        }
-        if (this.props.roleDetails && this.props.roleDetails.memberReviewDays) {
-            text =
-                text +
-                'Member Review: ' +
-                this.props.roleDetails.memberReviewDays +
-                ' days. ';
-            noDaysConfigured = false;
-        }
-        if (
-            this.props.roleDetails &&
-            this.props.roleDetails.serviceReviewDays
-        ) {
-            text =
-                text +
-                'Service Review: ' +
-                this.props.roleDetails.serviceReviewDays +
-                ' days. ';
-            noDaysConfigured = false;
-        }
-        if (this.props.roleDetails && this.props.roleDetails.groupReviewDays) {
-            text =
-                text +
-                'Group Review: ' +
-                this.props.roleDetails.groupReviewDays +
-                ' days. ';
-            noDaysConfigured = false;
-        }
-        if (noDaysConfigured) {
             text = text + 'None';
         }
 
-        const changeText = 'To change it, please click ';
+        const changeText = 'To change it for the role, please click ';
 
         return (
-            <SubmitTextSpan>
+            <SubmitTextSpan data-testid='role-expiration-details'>
                 {text}
                 <br />
                 {changeText}
