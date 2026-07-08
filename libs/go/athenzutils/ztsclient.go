@@ -144,12 +144,17 @@ func (e *accessTokenEntry) hasMinLifetime(expirySeconds int) bool {
 //     same token so that exactly one network call is in-flight per unique
 //     (domain, roles, …) key at any moment, preventing the thundering-herd
 //     problem on cold starts or simultaneous cache expiry.
+//   - Optionally a tokenDir can be configured (via NewAccessTokenCacheFromDir)
+//     to check pre-provisioned token files written by a SIA agent before
+//     falling back to ZTS.
 type AccessTokenCache struct {
-	mu      sync.RWMutex
-	entries map[string]*accessTokenEntry
-	fetcher ztsTokenFetcher
-	group   singleflight.Group
-	cancel  context.CancelFunc
+	mu        sync.RWMutex
+	entries   map[string]*accessTokenEntry
+	fetcher   ztsTokenFetcher
+	group     singleflight.Group
+	cancel    context.CancelFunc
+	tokenDir  string     // optional; empty means no disk fallback
+	diskIndex sync.Map   // diskCacheKey(domain, roles) → absolute file path
 }
 
 // NewAccessTokenCache creates an AccessTokenCache backed by a real ZTS client
@@ -209,13 +214,28 @@ func (c *AccessTokenCache) GetAccessToken(domain, service, roles, authzDetails, 
 		return entry.response, nil
 	}
 
-	// Slow path: fetch from ZTS, deduplicated per key so that N concurrent
-	// callers all waiting on the same missing/expiring token result in exactly
-	// one outbound request.
+	// Slow path: fetch from disk then ZTS, deduplicated per key so that N
+	// concurrent callers all waiting on the same missing/expiring token result
+	// in exactly one outbound request.
 	type sfResult struct {
 		entry *accessTokenEntry
 	}
 	v, err, _ := c.group.Do(key, func() (interface{}, error) {
+		// Check disk before calling ZTS.  Disk entries are written by the SIA
+		// agent and represent pre-provisioned tokens that are valid for the
+		// current host identity.
+		if c.tokenDir != "" {
+			if diskEntry := c.readFromDisk(domain, splitRoleString(roles)); diskEntry != nil {
+				// Promote into memory cache so subsequent requests are instant.
+				c.mu.Lock()
+				if cur, exists := c.entries[key]; !exists || diskEntry.expiresAt > cur.expiresAt {
+					c.entries[key] = diskEntry
+				}
+				c.mu.Unlock()
+				return sfResult{entry: diskEntry}, nil
+			}
+		}
+
 		request := GenerateAccessTokenRequestString(domain, service, roles, authzDetails, proxyPrincipalSpiffeUris, proxyForPrincipal, expiryTime)
 		resp, fetchErr := c.fetcher.PostAccessTokenRequest(zts.AccessTokenRequest(request))
 		if fetchErr != nil {
@@ -330,4 +350,13 @@ func tokenCacheKey(domain, service, roles, authzDetails, proxyPrincipalSpiffeUri
 	}
 	return fmt.Sprintf("%s\x00%s\x00%s\x00%s\x00%s\x00%s\x00%d",
 		domain, service, roles, authzDetails, proxyPrincipalSpiffeUris, proxyForPrincipal, expiryTime)
+}
+
+// splitRoleString converts a comma-separated roles string (e.g. "reader,writer")
+// into a slice. An empty string returns nil.
+func splitRoleString(roles string) []string {
+	if roles == "" {
+		return nil
+	}
+	return strings.Split(roles, ",")
 }
