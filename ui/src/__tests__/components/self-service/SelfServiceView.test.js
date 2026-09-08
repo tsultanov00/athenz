@@ -382,6 +382,48 @@ describe('SelfServiceView', () => {
         );
     });
 
+    it('should hide Extend when no expiry is configured on the role', async () => {
+        const memberships = {
+            list: [
+                {
+                    type: 'role',
+                    domainName: 'paranoids.tools',
+                    name: 'permanent-admins',
+                    memberStatus: 'member',
+                    selfRenew: false,
+                    maxExpiryDays: 0,
+                },
+            ],
+            domains: SEARCH_RESULTS.domains,
+            membershipCount: 1,
+        };
+        MockApi.setMockApi({
+            getPendingDomainMembersList: jest.fn().mockResolvedValue([]),
+            getReviewGroups: jest.fn().mockReturnValue([]),
+            getReviewRoles: jest.fn().mockReturnValue([]),
+            getPageFeatureFlag: jest.fn().mockResolvedValue({}),
+            searchSelfServe: jest
+                .fn()
+                .mockImplementation((substring, domain, member) =>
+                    member
+                        ? Promise.resolve(memberships)
+                        : Promise.resolve(EMPTY_SEARCH)
+                ),
+            updateSelfServe: jest.fn().mockResolvedValue({}),
+        });
+        renderWithRedux(<SelfServiceView userName='tsultanov' _csrf='csrf' />);
+        fireEvent.click(await screen.findByText(/My Roles & Groups \(1\)/));
+        await waitFor(() =>
+            expect(screen.getByText('permanent-admins')).toBeInTheDocument()
+        );
+        // a permanent membership (no cap, no self-renew) cannot be extended
+        expect(
+            screen.queryByTestId(
+                'extend-paranoids.tools:role.permanent-admins'
+            )
+        ).not.toBeInTheDocument();
+    });
+
     it('should select memberships on My Roles and open bulk leave', async () => {
         renderWithRedux(<SelfServiceView userName='tsultanov' _csrf='csrf' />);
         await waitFor(() =>

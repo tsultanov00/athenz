@@ -774,9 +774,10 @@ describe('self service screen tests', () => {
         );
     });
 
-    it('19: extending a role with no maximum allows any future date', async () => {
+    it('19: no expiry configured hides the extend button', async () => {
         await authenticateAndWait();
-        // no self-renew window and no expiry policy -> the picker is unbounded
+        // no self-renew window and no expiry policy -> the membership never
+        // expires, so extending is meaningless and Extend is not offered
         await createSelfServeRole(EXTEND_NOMAX_ROLE, {
             reviewEnabled: false,
             memberExpiryDays: 0,
@@ -790,33 +791,10 @@ describe('self service screen tests', () => {
 
         await reloadMine();
         const key = keyFor('role', EXTEND_NOMAX_ROLE);
+        // the membership row is present but offers no Extend action
         await waitForElementExist(rowLink('role', EXTEND_NOMAX_ROLE));
-        await waitAndClick(`[data-testid="extend-${key}"]`);
-
-        await waitForElementExist('[data-testid="extend-membership-form"]');
-        const maxText = await $('[data-testid="extend-max-text"]');
-        await expect(maxText).toHaveText(
-            expect.stringContaining('No maximum is configured')
-        );
-
-        // a far future date is selectable (no cap disables month navigation)
-        await waitAndClick('#self-serve-extend-expiry');
-        await waitAndClick('.flatpickr-calendar.open .flatpickr-next-month');
-        await waitAndClick('.flatpickr-calendar.open .flatpickr-next-month');
-        await waitAndClick(
-            '.flatpickr-calendar.open .flatpickr-day:not(.flatpickr-disabled)'
-        );
-        await browser.keys('Enter');
-        await waitAndClick('button*=Submit');
-        await waitForElementExist('[data-testid="extend-membership-form"]', {
-            reverse: true,
-        });
-
-        // admin extend on an ungated role applies immediately (approved=true)
-        const title = await waitForElementExist('[data-testid="alert-title"]');
-        await expect(title).toHaveText(
-            expect.stringContaining('Membership extended')
-        );
+        const extend = await $(`[data-testid="extend-${key}"]`);
+        await expect(extend).not.toExist();
     });
 
     it('20: extending a group opens the modal with a date picker', async () => {

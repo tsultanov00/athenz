@@ -164,6 +164,15 @@ const membersHref = (item) => {
     return `/domain/${item.domainName}/${kind}/${item.name}/members`;
 };
 
+// extending only makes sense when the membership can actually expire: either
+// the role/domain sets a member_expiry_days cap (surfaced as maxExpiryDays,
+// the effective minimum, 0 = unlimited) or the object self-renews within a
+// selfRenewMins window. With neither, the membership is permanent and Extend
+// is hidden.
+const hasExpiryPolicy = (item) =>
+    Number(item.maxExpiryDays) > 0 ||
+    (item.selfRenew && Number(item.selfRenewMins) > 0);
+
 export default class SelfServiceResultRow extends React.Component {
     renderPills(item) {
         const pills = [];
@@ -264,8 +273,10 @@ export default class SelfServiceResultRow extends React.Component {
                                 : `Expires ${formatDate(item.expiration)}`}
                         </Expiry>
                     )}
-                    {item.memberStatus === SELF_SERVICE_MEMBER_STATUS.MEMBER &&
-                        !item.inheritedFrom && (
+                    {item.memberStatus ===
+                        SELF_SERVICE_MEMBER_STATUS.MEMBER &&
+                        !item.inheritedFrom &&
+                        hasExpiryPolicy(item) && (
                             <Button
                                 secondary
                                 size='small'
