@@ -4537,30 +4537,6 @@
                         "comment": "flag indicates whether member removal requires confirmation"
                     },
                     {
-                        "name": "maxMembers",
-                        "type": "Int32",
-                        "optional": true,
-                        "comment": "maximum number of members allowed"
-                    },
-                    {
-                        "name": "memberExpiryDays",
-                        "type": "Int32",
-                        "optional": true,
-                        "comment": "all user members will have specified max expiry days"
-                    },
-                    {
-                        "name": "memberCount",
-                        "type": "Int32",
-                        "optional": true,
-                        "comment": "number of members currently in the role or group"
-                    },
-                    {
-                        "name": "created",
-                        "type": "Timestamp",
-                        "optional": true,
-                        "comment": "creation time of the role or group"
-                    },
-                    {
                         "name": "memberStatus",
                         "type": "String",
                         "optional": true,
@@ -4577,6 +4553,18 @@
                         "type": "ResourceName",
                         "optional": true,
                         "comment": "if the caller's membership is inherited through a group, the full name of that group (roles only)"
+                    },
+                    {
+                        "name": "memberExpiryDays",
+                        "type": "Int32",
+                        "optional": true,
+                        "comment": "maximum membership duration in days configured on this role or group (0 means no limit); callers derive the effective cap"
+                    },
+                    {
+                        "name": "domainMemberExpiryDays",
+                        "type": "Int32",
+                        "optional": true,
+                        "comment": "maximum membership duration in days configured on the owning domain (0 means no limit); callers derive the effective cap"
                     }
                 ],
                 "closed": false

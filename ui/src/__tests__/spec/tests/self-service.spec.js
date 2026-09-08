@@ -337,7 +337,7 @@ describe('self service screen tests', () => {
     // Find / search
     // =====================================================================
 
-    it('2: search by name returns the role with domain, link (new tab) and member count', async () => {
+    it('2: search by name returns the role with domain and link (new tab)', async () => {
         await authenticateAndWait();
         await createSelfServeRole(NAME_ROLE, {
             description: 'self service functional name role',
@@ -666,7 +666,7 @@ describe('self service screen tests', () => {
 
     it('17: membership expiry is shown for expiring roles', async () => {
         await authenticateAndWait();
-        // short expiry so the membership is flagged as urgent (<= 30 days)
+        // short expiry so the membership is flagged as urgent (<= 14 days)
         await createSelfServeRole(MINE_EXPIRY_ROLE, {
             reviewEnabled: false,
             memberExpiryDays: 10,
@@ -684,7 +684,7 @@ describe('self service screen tests', () => {
         await selectRow(reqKey);
         await waitAndClick('[data-testid="request-selected"]');
         await waitForElementExist('[data-testid="request-access-form"]');
-        // pick the first selectable day (~tomorrow) -> well within 30 days
+        // pick the first selectable day (~tomorrow) -> well within 14 days
         await waitAndClick('#self-serve-expiry');
         await waitAndClick(
             '.flatpickr-calendar.open .flatpickr-day:not(.flatpickr-disabled)'
@@ -711,13 +711,24 @@ describe('self service screen tests', () => {
 
     // =====================================================================
     // Extend
+    //
+    // The extend button is offered for every active membership. The success
+    // message is driven by the ZMS response (the membership's `approved`
+    // flag): true => applied ("Membership extended"), false => queued
+    // ("Request submitted"). The test principal is a domain admin, so extends
+    // on ungated roles/groups apply immediately (approved=true) and are
+    // asserted below. The approved=false (pending) message path requires an
+    // active member on an approval-gated role, which needs a separate approver
+    // that the single-principal functional harness does not have; that branch
+    // is covered by the SelfServiceView.extend unit tests instead.
     // =====================================================================
 
     it('18: extending a role caps the picker at the configured maximum', async () => {
         await authenticateAndWait();
+        // a non-self-renew role: Extend still appears and the picker is capped
+        // by the role/domain expiry policy (30 days from now)
         await createSelfServeRole(EXTEND_MAX_ROLE, {
             reviewEnabled: false,
-            selfRenew: true,
             memberExpiryDays: 30,
         });
         await gotoSelfService();
@@ -733,12 +744,12 @@ describe('self service screen tests', () => {
         await waitAndClick(`[data-testid="extend-${key}"]`);
 
         await waitForElementExist('[data-testid="extend-membership-form"]');
-        // The numeric cap ("up to 30 days ...") is the proof that the picker's
-        // maxDate is wired to the configured maximum; dates beyond it are greyed
-        // out as a direct consequence (also covered by the modal unit tests).
+        // The "until <date>" cap is the proof that the picker's maxDate is wired
+        // to the configured maximum; dates beyond it are greyed out as a direct
+        // consequence (also covered by the modal unit tests).
         const maxText = await $('[data-testid="extend-max-text"]');
         await expect(maxText).toHaveText(
-            expect.stringContaining('up to 30 day')
+            expect.stringContaining('You can extend until')
         );
 
         // The picker is capped at the maximum. Navigating a second month forward
@@ -753,13 +764,21 @@ describe('self service screen tests', () => {
         await waitForElementExist('[data-testid="extend-membership-form"]', {
             reverse: true,
         });
+
+        // the test principal is a domain admin on an ungated role, so ZMS
+        // applies the change immediately (approved=true) and the message
+        // reflects that rather than a pending request
+        const title = await waitForElementExist('[data-testid="alert-title"]');
+        await expect(title).toHaveText(
+            expect.stringContaining('Membership extended')
+        );
     });
 
     it('19: extending a role with no maximum allows any future date', async () => {
         await authenticateAndWait();
+        // no self-renew window and no expiry policy -> the picker is unbounded
         await createSelfServeRole(EXTEND_NOMAX_ROLE, {
             reviewEnabled: false,
-            selfRenew: true,
             memberExpiryDays: 0,
         });
         await gotoSelfService();
@@ -777,7 +796,7 @@ describe('self service screen tests', () => {
         await waitForElementExist('[data-testid="extend-membership-form"]');
         const maxText = await $('[data-testid="extend-max-text"]');
         await expect(maxText).toHaveText(
-            expect.stringContaining('No maximum expiry is configured')
+            expect.stringContaining('No maximum is configured')
         );
 
         // a far future date is selectable (no cap disables month navigation)
@@ -792,13 +811,19 @@ describe('self service screen tests', () => {
         await waitForElementExist('[data-testid="extend-membership-form"]', {
             reverse: true,
         });
+
+        // admin extend on an ungated role applies immediately (approved=true)
+        const title = await waitForElementExist('[data-testid="alert-title"]');
+        await expect(title).toHaveText(
+            expect.stringContaining('Membership extended')
+        );
     });
 
-    it('20: extending a group self-renews without opening a modal', async () => {
+    it('20: extending a group opens the modal with a date picker', async () => {
         await authenticateAndWait();
         await createSelfServeGroup(EXTEND_GROUP, {
             reviewEnabled: false,
-            selfRenew: true,
+            memberExpiryDays: 30,
         });
         await gotoSelfService();
 
@@ -812,11 +837,31 @@ describe('self service screen tests', () => {
         await waitForElementExist(rowLink('group', EXTEND_GROUP));
         await waitAndClick(`[data-testid="extend-${key}"]`);
 
-        // no modal is opened for groups (one-click self renew)
+        // groups now open the same modal as roles and are labelled accordingly
+        await waitForElementExist('[data-testid="extend-membership-form"]');
+        const maxText = await $('[data-testid="extend-max-text"]');
+        await expect(maxText).toHaveText(
+            expect.stringContaining('You can extend until')
+        );
+
+        // pick a valid in-range day and submit the new expiry
+        await waitAndClick('#self-serve-extend-expiry');
+        await waitAndClick(
+            '.flatpickr-calendar.open .flatpickr-day:not(.flatpickr-disabled)'
+        );
+        await browser.keys('Enter');
+        await waitAndClick('button*=Submit');
         await waitForElementExist('[data-testid="extend-membership-form"]', {
             reverse: true,
         });
-        // the membership is still held after the renew
+
+        // admin extend on an ungated group applies immediately (approved=true)
+        const title = await waitForElementExist('[data-testid="alert-title"]');
+        await expect(title).toHaveText(
+            expect.stringContaining('Membership extended')
+        );
+
+        // the membership is still held after extending
         await reloadMine();
         await waitForElementExist(rowLink('group', EXTEND_GROUP));
     });
@@ -875,6 +920,11 @@ describe('self service screen tests', () => {
         await inheritedPill.waitForExist();
         const leave = await $(`[data-testid="leave-${roleKey}"]`);
         await expect(leave).toBeDisabled();
+
+        // an inherited role is held via the group, not directly, so there is
+        // nothing to renew and no Extend button is offered on this row
+        const extend = await row.$(`[data-testid="extend-${roleKey}"]`);
+        await expect(extend).not.toExist();
 
         // hovering the disabled Leave reveals a link to the group's members page
         const trigger = await $(`[data-testid="leave-tooltip-${roleKey}"]`);

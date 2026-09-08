@@ -185,14 +185,13 @@ const search = (zms, params) => {
 
 const membershipBody = (params, memberName, { isGroup } = {}) => {
     const body = { memberName };
-    // groups carry neither an expiration nor a review reminder
-    if (isGroup) {
-        return body;
-    }
+    // both roles and groups support member expiration; the request flow simply
+    // omits it for groups, while the extend flow supplies a chosen date
     if (params.expiration) {
         body.expiration = params.expiration;
     }
-    if (params.reviewReminder) {
+    // review reminders apply to roles only
+    if (!isGroup && params.reviewReminder) {
         body.reviewReminder = params.reviewReminder;
     }
     return body;

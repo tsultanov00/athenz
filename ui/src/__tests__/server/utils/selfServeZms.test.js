@@ -220,7 +220,7 @@ describe('selfServeZms', () => {
         );
     });
 
-    it('drops expiration and reminder when requesting a group', async () => {
+    it('keeps a group expiration but drops the role-only review reminder', async () => {
         let captured;
         const zms = mockClient({
             getSelfServeRoles: () => ({ roles: [] }),
@@ -232,19 +232,21 @@ describe('selfServeZms', () => {
         await selfServeZms.applyAction(
             zms,
             {
-                action: 'request',
+                action: 'extend',
                 type: 'group',
                 domainName: 'paranoids.tools',
                 name: 'security-champions',
                 expiration: '2026-09-12T00:00:00.000Z',
                 reviewReminder: '2026-08-12T00:00:00.000Z',
-                justification: 'join champions',
+                justification: 'extend champions',
             },
             'user.jdoe'
         );
-        expect(captured.membership.expiration).toBeUndefined();
+        // groups support member expiration, so the chosen date is preserved
+        expect(captured.membership.expiration).toBe('2026-09-12T00:00:00.000Z');
+        // review reminders are a role-only concept and stay off group bodies
         expect(captured.membership.reviewReminder).toBeUndefined();
-        expect(captured.auditRef).toBe('join champions');
+        expect(captured.auditRef).toBe('extend champions');
         expect(captured.groupName).toBe('security-champions');
     });
 

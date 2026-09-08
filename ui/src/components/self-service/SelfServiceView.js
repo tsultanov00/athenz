@@ -268,7 +268,7 @@ export default class SelfServiceView extends React.Component {
                 },
                 this.props._csrf
             )
-            .then(() => ({ item, ok: true }))
+            .then((result) => ({ item, ok: true, result }))
             .catch((err) => ({
                 item,
                 ok: false,
@@ -369,28 +369,10 @@ export default class SelfServiceView extends React.Component {
     }
 
     openExtend(item) {
-        // groups renew for their configured self-renew window, so keep the
-        // one-click behaviour; roles open a modal where the user picks a new
-        // expiry date up to the effective maximum
-        if (item.type === 'group') {
-            this.handleExtend(item);
-            return;
-        }
+        // every active membership opens the modal so the user can pick a new
+        // expiry date (bounded by the effective maximum); self-renewable items
+        // apply immediately, everything else is submitted as a new request
         this.setState({ extendItem: item, errorMessage: null });
-    }
-
-    handleExtend(item, extra = {}) {
-        this.runAction(item, 'extend', extra).then((result) => {
-            this.refreshAfterAction();
-            if (!result.ok) {
-                this.setState({ errorMessage: result.error });
-                return;
-            }
-            this.showSuccess(
-                'Membership extended',
-                `${item.name} was renewed.`
-            );
-        });
     }
 
     handleExtendSubmit(expiration) {
@@ -398,17 +380,35 @@ export default class SelfServiceView extends React.Component {
         if (!item) {
             return;
         }
-        this.runAction(item, 'extend', { expiration }).then((result) => {
-            if (!result.ok) {
-                this.setState({ errorMessage: result.error });
+        this.runAction(item, 'extend', { expiration }).then((outcome) => {
+            if (!outcome.ok) {
+                this.setState({ errorMessage: outcome.error });
                 return;
             }
             this.setState({ extendItem: null });
             this.refreshAfterAction();
-            this.showSuccess(
-                'Membership extended',
-                `${item.name} was renewed.`
-            );
+            // ZMS reports the real outcome via the returned membership's
+            // approved flag: false means the change is pending approval, true
+            // means it was applied immediately (both are set explicitly by the
+            // server for every branch). Fall back to a neutral message only if
+            // no body came back, which should not happen on a successful extend.
+            const approved = outcome.result?.approved;
+            if (approved === false) {
+                this.showSuccess(
+                    'Request submitted',
+                    `Your extension request for ${item.name} will be reviewed.`
+                );
+            } else if (approved === true) {
+                this.showSuccess(
+                    'Membership extended',
+                    `${item.name} was renewed.`
+                );
+            } else {
+                this.showSuccess(
+                    'Extension submitted',
+                    `Your extension for ${item.name} has been submitted.`
+                );
+            }
         });
     }
 
@@ -515,6 +515,8 @@ export default class SelfServiceView extends React.Component {
             (item) => item.memberStatus === SELF_SERVICE_MEMBER_STATUS.PENDING
         );
         const { roles, groups } = splitByType(members);
+        const { roles: pendingRoles, groups: pendingGroups } =
+            splitByType(pending);
         const expiringSoon = members.filter((item) => {
             if (!item.expiration) {
                 return false;
@@ -548,8 +550,17 @@ export default class SelfServiceView extends React.Component {
                 {pending.length > 0 && (
                     <>
                         <PendingHeader>Pending requests</PendingHeader>
-                        {pending.map((item) =>
-                            this.renderRow(item, () => false, 'pending')
+                        {this.renderSection(
+                            'Roles',
+                            pendingRoles,
+                            () => false,
+                            'pending'
+                        )}
+                        {this.renderSection(
+                            'Groups',
+                            pendingGroups,
+                            () => false,
+                            'pending'
                         )}
                     </>
                 )}

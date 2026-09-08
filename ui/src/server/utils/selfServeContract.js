@@ -50,6 +50,14 @@ const toNumber = (value, fallback = 0) => {
     return Number.isFinite(number) ? number : fallback;
 };
 
+// ZMS returns the role/group and domain member-expiry caps as-is; the effective
+// cap is the lower of the two, with 0 meaning "no limit". Returns 0 when neither
+// side sets a limit.
+const effectiveExpiryDays = (collectionDays, domainDays) => {
+    const limits = [collectionDays, domainDays].filter((days) => days > 0);
+    return limits.length ? Math.min(...limits) : 0;
+};
+
 const mergeDefined = (base, override) => {
     const merged = { ...base };
     Object.keys(override || {}).forEach((key) => {
@@ -166,7 +174,6 @@ const toSelfServeItem = (item = {}, fallbackType) => {
             pick(flat, ['roleName', 'groupName', 'simpleName', 'name'], '') ||
             parsed.name,
         description: pick(flat, ['description', 'desc', 'detail'], ''),
-        memberCount: toNumber(pick(flat, ['memberCount', 'members'], 0)),
         memberStatus: mapMemberStatus(flat),
         owner: pick(
             flat,
@@ -192,12 +199,11 @@ const toSelfServeItem = (item = {}, fallbackType) => {
         auditEnabled: toBool(pick(flat, ['auditEnabled'])),
         deleteProtection: toBool(pick(flat, ['deleteProtection'])),
         inheritedFrom: inheritedFrom(flat) || undefined,
-        maxExpiryDays: toNumber(
-            pick(
-                flat,
-                ['maxExpiryDays', 'memberExpiryDays', 'maxMemberExpiryDays'],
-                0
-            )
+        maxExpiryDays: effectiveExpiryDays(
+            toNumber(
+                pick(flat, ['memberExpiryDays', 'maxMemberExpiryDays'], 0)
+            ),
+            toNumber(pick(flat, ['domainMemberExpiryDays'], 0))
         ),
     };
 };

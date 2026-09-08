@@ -26,7 +26,6 @@ const SEARCH_RESULTS = {
             domainName: 'paranoids.tools',
             name: 'security-platform-users',
             description: 'Day to day access to the Security Platform console.',
-            memberCount: 1876,
             memberStatus: 'none',
             owner: 'paranoids-tools@example.com',
             maxExpiryDays: 90,
@@ -36,7 +35,6 @@ const SEARCH_RESULTS = {
             domainName: 'paranoids.tools',
             name: 'security-platform-reviewers',
             description: 'Review Security Platform scan exceptions.',
-            memberCount: 11,
             memberStatus: 'none',
             owner: 'paranoids-tools@example.com',
         },
@@ -45,7 +43,6 @@ const SEARCH_RESULTS = {
             domainName: 'athenz.prod',
             name: 'security-platform-auditors',
             description: 'Audit Security Platform scan coverage.',
-            memberCount: 17,
             memberStatus: 'pending',
             owner: 'athenz-grc@example.com',
             auditEnabled: true,
@@ -55,7 +52,6 @@ const SEARCH_RESULTS = {
             domainName: 'paranoids.tools',
             name: 'scanner-users',
             description: 'Run scans against domains you own.',
-            memberCount: 733,
             memberStatus: 'member',
             owner: 'paranoids-tools@example.com',
             inheritedFrom: 'paranoids.tools:group.security-champions',
@@ -66,7 +62,6 @@ const SEARCH_RESULTS = {
             name: 'security-champions',
             description:
                 'Security champions for domains onboarded to the platform.',
-            memberCount: 54,
             memberStatus: 'member',
             owner: 'paranoids-tools@example.com',
         },
@@ -83,7 +78,6 @@ const MEMBERSHIPS = {
             domainName: 'paranoids.tools',
             name: 'scanner-admins',
             description: 'Admin access to scans.',
-            memberCount: 3,
             memberStatus: 'member',
             selfRenew: true,
             maxExpiryDays: 30,
@@ -93,7 +87,6 @@ const MEMBERSHIPS = {
             type: 'group',
             domainName: 'paranoids.tools',
             name: 'scanner-operators',
-            memberCount: 8,
             memberStatus: 'member',
             selfRenew: true,
             maxExpiryDays: 30,
@@ -313,29 +306,14 @@ describe('SelfServiceView', () => {
             await screen.findByTestId('extend-membership-form')
         ).toBeInTheDocument();
         expect(screen.getByTestId('extend-max-text')).toHaveTextContent(
-            'You can extend by up to 30 days'
+            'You can extend until'
         );
         // submitting without picking a date surfaces a validation error
         fireEvent.click(screen.getByText('Submit'));
         expect(screen.getByText(/Pick a new expiry date/)).toBeInTheDocument();
     });
 
-    it('should self-renew a group immediately without opening a modal', async () => {
-        const updateSelfServe = jest.fn().mockResolvedValue({});
-        MockApi.setMockApi({
-            getPendingDomainMembersList: jest.fn().mockResolvedValue([]),
-            getReviewGroups: jest.fn().mockReturnValue([]),
-            getReviewRoles: jest.fn().mockReturnValue([]),
-            getPageFeatureFlag: jest.fn().mockResolvedValue({}),
-            searchSelfServe: jest
-                .fn()
-                .mockImplementation((substring, domain, member) =>
-                    member
-                        ? Promise.resolve(MEMBERSHIPS)
-                        : Promise.resolve(EMPTY_SEARCH)
-                ),
-            updateSelfServe,
-        });
+    it('should open the extend modal for a group with a date picker', async () => {
         renderWithRedux(<SelfServiceView userName='tsultanov' _csrf='csrf' />);
         fireEvent.click(await screen.findByText(/My Roles & Groups \(4\)/));
         await waitFor(() =>
@@ -345,17 +323,62 @@ describe('SelfServiceView', () => {
             screen.getByTestId('extend-paranoids.tools:group.scanner-operators')
         );
         expect(
-            screen.queryByTestId('extend-membership-form')
-        ).not.toBeInTheDocument();
+            await screen.findByTestId('extend-membership-form')
+        ).toBeInTheDocument();
+        // the modal labels the resource as a group and still exposes the cap
+        expect(screen.getByText('Group')).toBeInTheDocument();
+        expect(screen.getByTestId('extend-max-text')).toHaveTextContent(
+            'You can extend until'
+        );
+        // a date is required before the extension can be submitted
+        fireEvent.click(screen.getByText('Submit'));
+        expect(screen.getByText(/Pick a new expiry date/)).toBeInTheDocument();
+    });
+
+    it('should cap the extend modal by the self-renew window when it is shorter', async () => {
+        const memberships = {
+            list: [
+                {
+                    type: 'role',
+                    domainName: 'paranoids.tools',
+                    name: 'shortlived-admins',
+                    memberStatus: 'member',
+                    selfRenew: true,
+                    selfRenewMins: 120,
+                    maxExpiryDays: 30,
+                },
+            ],
+            domains: SEARCH_RESULTS.domains,
+            membershipCount: 1,
+        };
+        MockApi.setMockApi({
+            getPendingDomainMembersList: jest.fn().mockResolvedValue([]),
+            getReviewGroups: jest.fn().mockReturnValue([]),
+            getReviewRoles: jest.fn().mockReturnValue([]),
+            getPageFeatureFlag: jest.fn().mockResolvedValue({}),
+            searchSelfServe: jest
+                .fn()
+                .mockImplementation((substring, domain, member) =>
+                    member
+                        ? Promise.resolve(memberships)
+                        : Promise.resolve(EMPTY_SEARCH)
+                ),
+            updateSelfServe: jest.fn().mockResolvedValue({}),
+        });
+        renderWithRedux(<SelfServiceView userName='tsultanov' _csrf='csrf' />);
+        fireEvent.click(await screen.findByText(/My Roles & Groups \(1\)/));
         await waitFor(() =>
-            expect(updateSelfServe).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    action: 'extend',
-                    type: 'group',
-                    name: 'scanner-operators',
-                }),
-                'csrf'
-            )
+            expect(screen.getByText('shortlived-admins')).toBeInTheDocument()
+        );
+        fireEvent.click(
+            screen.getByTestId('extend-paranoids.tools:role.shortlived-admins')
+        );
+        expect(
+            await screen.findByTestId('extend-membership-form')
+        ).toBeInTheDocument();
+        // the 2-hour self-renew window wins over the 30-day expiry policy
+        expect(screen.getByTestId('extend-max-text')).toHaveTextContent(
+            '2 hours'
         );
     });
 

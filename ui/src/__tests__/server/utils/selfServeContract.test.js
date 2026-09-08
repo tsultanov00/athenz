@@ -28,7 +28,6 @@ describe('selfServeContract', () => {
                     roleName: 'security-platform-users',
                     description: 'Day to day access',
                     memberStatus: 'NONE',
-                    memberCount: 1876,
                     roleOwner: 'paranoids-tools@example.com',
                     selfRenew: true,
                     selfRenewMins: 43200,
@@ -36,6 +35,7 @@ describe('selfServeContract', () => {
                     auditEnabled: false,
                     deleteProtection: true,
                     memberExpiryDays: 90,
+                    domainMemberExpiryDays: 30,
                 },
                 {
                     name: 'athenz.prod:role.security-platform-auditors',
@@ -52,7 +52,6 @@ describe('selfServeContract', () => {
                     groupName: 'security-champions',
                     description: 'Champions group',
                     memberStatus: 'member',
-                    memberCount: 54,
                 },
             ],
         });
@@ -64,13 +63,12 @@ describe('selfServeContract', () => {
                 domainName: 'paranoids.tools',
                 name: 'security-platform-users',
                 memberStatus: 'none',
-                memberCount: 1876,
                 owner: 'paranoids-tools@example.com',
                 selfRenew: true,
                 selfRenewMins: 43200,
                 reviewEnabled: true,
                 deleteProtection: true,
-                maxExpiryDays: 90,
+                maxExpiryDays: 30,
             })
         );
         expect(mapped.list[1]).toEqual(

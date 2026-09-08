@@ -251,7 +251,8 @@ export default class SelfServiceResultRow extends React.Component {
         const key = resourceKey(item);
         if (this.props.variant === 'membership') {
             const days = daysUntil(item.expiration);
-            const urgent = days !== null && days <= 30;
+            // red only signals an imminent expiry (<= 14 days); otherwise grey
+            const urgent = days !== null && days <= 14;
             return (
                 <Actions>
                     {item.expiration && (
@@ -263,9 +264,8 @@ export default class SelfServiceResultRow extends React.Component {
                                 : `Expires ${formatDate(item.expiration)}`}
                         </Expiry>
                     )}
-                    {item.selfRenew &&
-                        item.memberStatus ===
-                            SELF_SERVICE_MEMBER_STATUS.MEMBER && (
+                    {item.memberStatus === SELF_SERVICE_MEMBER_STATUS.MEMBER &&
+                        !item.inheritedFrom && (
                             <Button
                                 secondary
                                 size='small'
@@ -310,17 +310,16 @@ export default class SelfServiceResultRow extends React.Component {
 
     renderMeta(item) {
         if (this.props.variant === 'pending') {
-            const kind = item.type === 'group' ? 'Group' : 'Role';
-            const requested = item.requestedOn
-                ? `Requested ${formatDate(item.requestedOn)}`
-                : 'Request pending';
-            const waiting = item.owner ? `waiting on ${item.owner}` : '';
+            const parts = [];
+            if (item.requestedOn) {
+                parts.push(`Requested ${formatDate(item.requestedOn)}`);
+            }
+            if (item.owner) {
+                parts.push(`waiting on ${item.owner}`);
+            }
             return (
                 <>
-                    <Meta>
-                        {kind} · {requested}
-                        {waiting ? ` · ${waiting}` : ''}
-                    </Meta>
+                    {parts.length > 0 && <Meta>{parts.join(' · ')}</Meta>}
                     {item.requestJustification && (
                         <Meta>
                             Your justification: {item.requestJustification}
@@ -329,9 +328,7 @@ export default class SelfServiceResultRow extends React.Component {
                 </>
             );
         }
-        const memberLabel =
-            item.memberCount === 1 ? '1 member' : `${item.memberCount} members`;
-        return <Meta>{memberLabel}</Meta>;
+        return null;
     }
 
     render() {

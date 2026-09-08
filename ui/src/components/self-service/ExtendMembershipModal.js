@@ -82,14 +82,35 @@ const FlatPickrInputDiv = styled.div`
     }
 `;
 
+const MS_PER_MIN = 60 * 1000;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
-const formatDate = (date) =>
-    date.toLocaleDateString('en-GB', {
+const formatDateTime = (date) =>
+    date.toLocaleString('en-GB', {
         day: 'numeric',
         month: 'short',
         year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
     });
+
+// short, human-friendly "in X" description of how far away the cap is, so the
+// max reads naturally whether the window is minutes, hours or months
+const humanizeUntil = (date) => {
+    const mins = Math.max(
+        1,
+        Math.round((date.getTime() - Date.now()) / MS_PER_MIN)
+    );
+    if (mins < 60) {
+        return `in ${mins} min`;
+    }
+    const hours = Math.round(mins / 60);
+    if (hours < 48) {
+        return `in ${hours} hour${hours === 1 ? '' : 's'}`;
+    }
+    const days = Math.round(hours / 24);
+    return `in ${days} day${days === 1 ? '' : 's'}`;
+};
 
 export default class ExtendMembershipModal extends React.Component {
     constructor(props) {
@@ -102,16 +123,22 @@ export default class ExtendMembershipModal extends React.Component {
         };
     }
 
-    // effective member expiry days for the role, already computed by ZMS as the
-    // lowest of the domain and role setting (0 means there is no configured max)
-    maxDays() {
-        const days = Number(this.props.item?.maxExpiryDays);
-        return Number.isFinite(days) && days > 0 ? days : 0;
-    }
-
-    maxDate() {
-        const days = this.maxDays();
-        return days ? new Date(Date.now() + days * MS_PER_DAY) : null;
+    // the effective cap is the earliest of the configured limits: the self-renew
+    // window (now + selfRenewMins) and the role/group expiry policy (now +
+    // maxExpiryDays, itself the lowest of the role and domain setting). A limit
+    // of 0/unset means it does not apply; if neither applies there is no maximum.
+    effectiveMaxDate() {
+        const item = this.props.item ?? {};
+        const caps = [];
+        const selfRenewMins = Number(item.selfRenewMins);
+        if (item.selfRenew && selfRenewMins > 0) {
+            caps.push(Date.now() + selfRenewMins * MS_PER_MIN);
+        }
+        const maxExpiryDays = Number(item.maxExpiryDays);
+        if (maxExpiryDays > 0) {
+            caps.push(Date.now() + maxExpiryDays * MS_PER_DAY);
+        }
+        return caps.length ? new Date(Math.min(...caps)) : null;
     }
 
     onSubmit() {
@@ -132,12 +159,12 @@ export default class ExtendMembershipModal extends React.Component {
         if (!item) {
             return null;
         }
-        const maxDays = this.maxDays();
-        const maxDate = this.maxDate();
+        const maxDate = this.effectiveMaxDate();
+        const typeLabel = item.type === 'group' ? 'Group' : 'Role';
         const sections = (
             <SectionsDiv data-testid='extend-membership-form'>
                 <SectionDiv>
-                    <StyledInputLabel>Role</StyledInputLabel>
+                    <StyledInputLabel>{typeLabel}</StyledInputLabel>
                     <ContentDiv>
                         <ValueText>{item.name}</ValueText>
                     </ContentDiv>
@@ -161,6 +188,11 @@ export default class ExtendMembershipModal extends React.Component {
                                         errorMessage: null,
                                     });
                                 }}
+                                // scope this override to the self-service extend
+                                // modal only: the shared FlatPicker otherwise floors
+                                // selection at now+4h, which clamps the time wheel on
+                                // the current day for short extension windows
+                                minDate={new Date()}
                                 maxDate={maxDate}
                                 id='self-serve-extend-expiry'
                                 clear={this.state.expiry}
@@ -169,11 +201,16 @@ export default class ExtendMembershipModal extends React.Component {
                     </ContentDiv>
                 </SectionDiv>
                 <MaxText data-testid='extend-max-text'>
-                    {maxDays
-                        ? `You can extend by up to ${maxDays} day${
-                              maxDays === 1 ? '' : 's'
-                          } (until ${formatDate(maxDate)}).`
-                        : 'No maximum expiry is configured, so you can pick any future date.'}
+                    {maxDate
+                        ? `You can extend until ${formatDateTime(
+                              maxDate
+                          )} (${humanizeUntil(maxDate)}).`
+                        : 'No maximum is configured, so you can pick any future date.'}
+                </MaxText>
+                <MaxText data-testid='extend-approval-note'>
+                    If this {typeLabel.toLowerCase()} requires approval, your
+                    extension will be submitted as a request instead of applied
+                    immediately.
                 </MaxText>
             </SectionsDiv>
         );
