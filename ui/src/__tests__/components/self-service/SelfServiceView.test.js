@@ -418,9 +418,7 @@ describe('SelfServiceView', () => {
         );
         // a permanent membership (no cap, no self-renew) cannot be extended
         expect(
-            screen.queryByTestId(
-                'extend-paranoids.tools:role.permanent-admins'
-            )
+            screen.queryByTestId('extend-paranoids.tools:role.permanent-admins')
         ).not.toBeInTheDocument();
     });
 

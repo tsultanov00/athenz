@@ -273,8 +273,7 @@ export default class SelfServiceResultRow extends React.Component {
                                 : `Expires ${formatDate(item.expiration)}`}
                         </Expiry>
                     )}
-                    {item.memberStatus ===
-                        SELF_SERVICE_MEMBER_STATUS.MEMBER &&
+                    {item.memberStatus === SELF_SERVICE_MEMBER_STATUS.MEMBER &&
                         !item.inheritedFrom &&
                         hasExpiryPolicy(item) && (
                             <Button

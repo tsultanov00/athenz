@@ -200,7 +200,9 @@ const toSelfServeItem = (item = {}, fallbackType) => {
         deleteProtection: toBool(pick(flat, ['deleteProtection'])),
         inheritedFrom: inheritedFrom(flat) || undefined,
         maxExpiryDays: effectiveExpiryDays(
-            toNumber(pick(flat, ['memberExpiryDays', 'maxMemberExpiryDays'], 0)),
+            toNumber(
+                pick(flat, ['memberExpiryDays', 'maxMemberExpiryDays'], 0)
+            ),
             toNumber(pick(flat, ['domainMemberExpiryDays'], 0))
         ),
     };
