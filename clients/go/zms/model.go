@@ -9635,6 +9635,18 @@ type SelfServeObject struct {
 	// that group (roles only)
 	//
 	InheritedFrom ResourceName `json:"inheritedFrom,omitempty" rdl:"optional" yaml:",omitempty"`
+
+	//
+	// maximum membership duration in days configured on this role or group (0
+	// means no limit); callers derive the effective cap
+	//
+	MemberExpiryDays *int32 `json:"memberExpiryDays,omitempty" rdl:"optional" yaml:",omitempty"`
+
+	//
+	// maximum membership duration in days configured on the owning domain (0
+	// means no limit); callers derive the effective cap
+	//
+	DomainMemberExpiryDays *int32 `json:"domainMemberExpiryDays,omitempty" rdl:"optional" yaml:",omitempty"`
 }
 
 // NewSelfServeObject - creates an initialized SelfServeObject instance, returns a pointer to it

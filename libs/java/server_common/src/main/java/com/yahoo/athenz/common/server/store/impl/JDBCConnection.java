@@ -722,8 +722,9 @@ public class JDBCConnection implements ObjectStoreConnection {
             + " ORDER BY domain.name, principal_group.name;";
     private static final String SQL_GET_SELF_SERVE_ROLES = "SELECT domain.name AS domain_name, role.name AS role_name,"
             + " role.description, role.self_renew, role.self_renew_mins, role.review_enabled, role.audit_enabled,"
-            + " role.delete_protection,"
-            + " rm.expiration AS member_expiration, CASE WHEN rm.principal_id IS NULL THEN 0 ELSE 1 END AS is_member,"
+            + " role.delete_protection, role.member_expiry_days,"
+            + " domain.member_expiry_days AS domain_member_expiry_days,"
+            + " rm.principal_id AS member_principal, rm.expiration AS member_expiration,"
             + " prm.principal_id AS pending_principal, prm.expiration AS pending_expiration,"
             + " inh.inherited_from AS inherited_from, inh.inherited_expiration AS inherited_expiration FROM role"
             + " JOIN domain ON role.domain_id=domain.domain_id"
@@ -742,8 +743,9 @@ public class JDBCConnection implements ObjectStoreConnection {
     private static final String SQL_GET_SELF_SERVE_GROUPS = "SELECT domain.name AS domain_name,"
             + " principal_group.name AS group_name, principal_group.self_renew, principal_group.self_renew_mins,"
             + " principal_group.review_enabled, principal_group.audit_enabled, principal_group.delete_protection,"
-            + " gm.expiration AS member_expiration,"
-            + " CASE WHEN gm.principal_id IS NULL THEN 0 ELSE 1 END AS is_member,"
+            + " principal_group.member_expiry_days,"
+            + " domain.member_expiry_days AS domain_member_expiry_days,"
+            + " gm.principal_id AS member_principal, gm.expiration AS member_expiration,"
             + " pgm.principal_id AS pending_principal, pgm.expiration AS pending_expiration"
             + " FROM principal_group JOIN domain ON principal_group.domain_id=domain.domain_id"
             + " LEFT JOIN principal_group_member gm ON gm.group_id=principal_group.group_id AND gm.principal_id=?"
@@ -8418,7 +8420,12 @@ public class JDBCConnection implements ObjectStoreConnection {
     // columns are absent for the group query and skipped via includeInherited.
     private void applyMemberOverlay(ResultSet rs, SelfServeObject selfServeObject, boolean includeInherited) throws SQLException {
 
-        final boolean directMember = rs.getBoolean(JDBCConsts.DB_COLUMN_AS_IS_MEMBER);
+        // surface the role/group and domain expiry caps as-is; callers derive the
+        // effective (lowest) value, treating 0 as "no limit"
+        selfServeObject.setMemberExpiryDays(rs.getInt(JDBCConsts.DB_COLUMN_MEMBER_EXPIRY_DAYS));
+        selfServeObject.setDomainMemberExpiryDays(rs.getInt(JDBCConsts.DB_COLUMN_AS_DOMAIN_MEMBER_EXPIRY_DAYS));
+
+        final boolean directMember = rs.getObject(JDBCConsts.DB_COLUMN_AS_MEMBER_PRINCIPAL) != null;
         final java.sql.Timestamp memberExpiration = rs.getTimestamp(JDBCConsts.DB_COLUMN_AS_MEMBER_EXPIRATION);
         final boolean pending = rs.getObject(JDBCConsts.DB_COLUMN_AS_PENDING_PRINCIPAL) != null;
         final java.sql.Timestamp pendingExpiration = rs.getTimestamp(JDBCConsts.DB_COLUMN_AS_PENDING_EXPIRATION);

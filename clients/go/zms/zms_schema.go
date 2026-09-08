@@ -942,6 +942,8 @@ func init() {
 	tSelfServeObject.Field("memberStatus", "String", true, nil, "membership state of the calling principal for this object: member, pending or none")
 	tSelfServeObject.Field("expiration", "Timestamp", true, nil, "expiration timestamp of the calling principal's membership, if any")
 	tSelfServeObject.Field("inheritedFrom", "ResourceName", true, nil, "if the caller's membership is inherited through a group, the full name of that group (roles only)")
+	tSelfServeObject.Field("memberExpiryDays", "Int32", true, nil, "maximum membership duration in days configured on this role or group (0 means no limit); callers derive the effective cap")
+	tSelfServeObject.Field("domainMemberExpiryDays", "Int32", true, nil, "maximum membership duration in days configured on the owning domain (0 means no limit); callers derive the effective cap")
 	sb.AddType(tSelfServeObject.Build())
 
 	tSelfServeObjects := rdl.NewStructTypeBuilder("Struct", "SelfServeObjects")

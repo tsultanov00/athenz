@@ -114,6 +114,7 @@ public class ZMSSelfServeTest {
         descRole.setDescription("grants " + MARKER + " read access");
         descRole.setSelfRenew(true);
         descRole.setSelfRenewMins(4320);
+        descRole.setMemberExpiryDays(90);
         zmsImpl.putRole(ctx, domainName, "sredb-readers", auditRef, false, null, descRole);
 
         // a self-service, review-enabled role whose name contains the marker (no members)
@@ -149,6 +150,8 @@ public class ZMSSelfServeTest {
         assertEquals(descObject.getDescription(), "grants " + MARKER + " read access");
         assertEquals(descObject.getSelfRenew(), Boolean.TRUE);
         assertEquals(descObject.getSelfRenewMins(), Integer.valueOf(4320));
+        assertEquals(descObject.getMemberExpiryDays(), Integer.valueOf(90));
+        assertNotNull(descObject.getDomainMemberExpiryDays());
         assertEquals(descObject.getReviewEnabled(), Boolean.FALSE);
 
         // the review-enabled role reports review enabled
@@ -204,6 +207,7 @@ public class ZMSSelfServeTest {
         selfServeGroup.setSelfServe(true);
         selfServeGroup.setSelfRenew(true);
         selfServeGroup.setSelfRenewMins(1440);
+        selfServeGroup.setMemberExpiryDays(60);
         zmsImpl.putGroup(ctx, domainName, MARKER + "-team", auditRef, false, null, selfServeGroup);
 
         // a group that is NOT self-service - it must never be returned
@@ -224,6 +228,8 @@ public class ZMSSelfServeTest {
         assertNull(groupObject.getDescription());
         assertEquals(groupObject.getSelfRenew(), Boolean.TRUE);
         assertEquals(groupObject.getSelfRenewMins(), Integer.valueOf(1440));
+        assertEquals(groupObject.getMemberExpiryDays(), Integer.valueOf(60));
+        assertNotNull(groupObject.getDomainMemberExpiryDays());
         assertEquals(groupObject.getReviewEnabled(), Boolean.FALSE);
 
         // a substring with no matches returns an empty list

@@ -42,6 +42,12 @@ public class SelfServeObject {
     @RdlOptional
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
     public String inheritedFrom;
+    @RdlOptional
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
+    public Integer memberExpiryDays;
+    @RdlOptional
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
+    public Integer domainMemberExpiryDays;
 
     public SelfServeObject setDomainName(String domainName) {
         this.domainName = domainName;
@@ -120,6 +126,20 @@ public class SelfServeObject {
     public String getInheritedFrom() {
         return inheritedFrom;
     }
+    public SelfServeObject setMemberExpiryDays(Integer memberExpiryDays) {
+        this.memberExpiryDays = memberExpiryDays;
+        return this;
+    }
+    public Integer getMemberExpiryDays() {
+        return memberExpiryDays;
+    }
+    public SelfServeObject setDomainMemberExpiryDays(Integer domainMemberExpiryDays) {
+        this.domainMemberExpiryDays = domainMemberExpiryDays;
+        return this;
+    }
+    public Integer getDomainMemberExpiryDays() {
+        return domainMemberExpiryDays;
+    }
 
     @Override
     public boolean equals(Object another) {
@@ -159,6 +179,12 @@ public class SelfServeObject {
                 return false;
             }
             if (inheritedFrom == null ? a.inheritedFrom != null : !inheritedFrom.equals(a.inheritedFrom)) {
+                return false;
+            }
+            if (memberExpiryDays == null ? a.memberExpiryDays != null : !memberExpiryDays.equals(a.memberExpiryDays)) {
+                return false;
+            }
+            if (domainMemberExpiryDays == null ? a.domainMemberExpiryDays != null : !domainMemberExpiryDays.equals(a.domainMemberExpiryDays)) {
                 return false;
             }
         }

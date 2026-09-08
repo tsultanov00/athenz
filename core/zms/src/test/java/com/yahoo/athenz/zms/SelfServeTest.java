@@ -33,14 +33,16 @@ public class SelfServeTest {
                 .setSelfRenew(true).setSelfRenewMins(30).setReviewEnabled(true)
                 .setAuditEnabled(false).setDeleteProtection(true)
                 .setMemberStatus("member").setExpiration(Timestamp.fromMillis(223456789))
-                .setInheritedFrom("home.domain:group.devs");
+                .setInheritedFrom("home.domain:group.devs")
+                .setMemberExpiryDays(90).setDomainMemberExpiryDays(30);
 
         SelfServeObject object2 = new SelfServeObject()
                 .setDomainName("domain1").setName("name1").setDescription("desc1")
                 .setSelfRenew(true).setSelfRenewMins(30).setReviewEnabled(true)
                 .setAuditEnabled(false).setDeleteProtection(true)
                 .setMemberStatus("member").setExpiration(Timestamp.fromMillis(223456789))
-                .setInheritedFrom("home.domain:group.devs");
+                .setInheritedFrom("home.domain:group.devs")
+                .setMemberExpiryDays(90).setDomainMemberExpiryDays(30);
 
         assertEquals(object1, object1);
         assertEquals(object1, object2);
@@ -59,6 +61,8 @@ public class SelfServeTest {
         assertEquals("member", object1.getMemberStatus());
         assertEquals(Timestamp.fromMillis(223456789), object1.getExpiration());
         assertEquals("home.domain:group.devs", object1.getInheritedFrom());
+        assertEquals(Integer.valueOf(90), object1.getMemberExpiryDays());
+        assertEquals(Integer.valueOf(30), object1.getDomainMemberExpiryDays());
 
         object1.setDomainName("domain2");
         assertNotEquals(object1, object2);
@@ -135,6 +139,20 @@ public class SelfServeTest {
         object1.setInheritedFrom(null);
         assertNotEquals(object1, object2);
         object1.setInheritedFrom("home.domain:group.devs");
+        assertEquals(object1, object2);
+
+        object1.setMemberExpiryDays(91);
+        assertNotEquals(object1, object2);
+        object1.setMemberExpiryDays(null);
+        assertNotEquals(object1, object2);
+        object1.setMemberExpiryDays(90);
+        assertEquals(object1, object2);
+
+        object1.setDomainMemberExpiryDays(31);
+        assertNotEquals(object1, object2);
+        object1.setDomainMemberExpiryDays(null);
+        assertNotEquals(object1, object2);
+        object1.setDomainMemberExpiryDays(30);
         assertEquals(object1, object2);
     }
 

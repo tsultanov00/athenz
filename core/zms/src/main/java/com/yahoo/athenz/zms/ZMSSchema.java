@@ -817,7 +817,9 @@ public class ZMSSchema {
             .field("deleteProtection", "Bool", true, "flag indicates whether member removal requires confirmation")
             .field("memberStatus", "String", true, "membership state of the calling principal for this object: member, pending or none")
             .field("expiration", "Timestamp", true, "expiration timestamp of the calling principal's membership, if any")
-            .field("inheritedFrom", "ResourceName", true, "if the caller's membership is inherited through a group, the full name of that group (roles only)");
+            .field("inheritedFrom", "ResourceName", true, "if the caller's membership is inherited through a group, the full name of that group (roles only)")
+            .field("memberExpiryDays", "Int32", true, "maximum membership duration in days configured on this role or group (0 means no limit); callers derive the effective cap")
+            .field("domainMemberExpiryDays", "Int32", true, "maximum membership duration in days configured on the owning domain (0 means no limit); callers derive the effective cap");
 
         sb.structType("SelfServeObjects")
             .comment("The representation for a list of self-service objects.")

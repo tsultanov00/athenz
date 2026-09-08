@@ -16214,6 +16214,8 @@ public class JDBCConnectionTest {
         Mockito.when(mockResultSet.getBoolean(JDBCConsts.DB_COLUMN_REVIEW_ENABLED)).thenReturn(true).thenReturn(false);
         Mockito.when(mockResultSet.getBoolean(JDBCConsts.DB_COLUMN_AUDIT_ENABLED)).thenReturn(false).thenReturn(true);
         Mockito.when(mockResultSet.getBoolean(JDBCConsts.DB_COLUMN_DELETE_PROTECTION)).thenReturn(false).thenReturn(true);
+        Mockito.when(mockResultSet.getInt(JDBCConsts.DB_COLUMN_MEMBER_EXPIRY_DAYS)).thenReturn(90).thenReturn(0);
+        Mockito.when(mockResultSet.getInt(JDBCConsts.DB_COLUMN_AS_DOMAIN_MEMBER_EXPIRY_DAYS)).thenReturn(30).thenReturn(30);
 
         JDBCConnection jdbcConn = new JDBCConnection(mockConn, true);
         SelfServeObjects selfServeObjects = jdbcConn.getSelfServeRoles("Platform", null, false);
@@ -16224,12 +16226,14 @@ public class JDBCConnectionTest {
 
         SelfServeObject object1 = new SelfServeObject().setDomainName("domain1").setName("role1").setDescription("desc1")
                 .setSelfRenew(true).setSelfRenewMins(30).setReviewEnabled(true).setAuditEnabled(false)
-                .setDeleteProtection(false).setMemberStatus("none");
+                .setDeleteProtection(false).setMemberStatus("none")
+                .setMemberExpiryDays(90).setDomainMemberExpiryDays(30);
         assertEquals(objects.get(0), object1);
 
         SelfServeObject object2 = new SelfServeObject().setDomainName("domain2").setName("role2").setDescription("desc2")
                 .setSelfRenew(false).setSelfRenewMins(0).setReviewEnabled(false).setAuditEnabled(true)
-                .setDeleteProtection(true).setMemberStatus("none");
+                .setDeleteProtection(true).setMemberStatus("none")
+                .setMemberExpiryDays(0).setDomainMemberExpiryDays(30);
         assertEquals(objects.get(1), object2);
 
         // with no principal supplied the overlay join uses id 0 (no match)
@@ -16292,6 +16296,8 @@ public class JDBCConnectionTest {
         Mockito.when(mockResultSet.getBoolean(JDBCConsts.DB_COLUMN_REVIEW_ENABLED)).thenReturn(true);
         Mockito.when(mockResultSet.getBoolean(JDBCConsts.DB_COLUMN_AUDIT_ENABLED)).thenReturn(false);
         Mockito.when(mockResultSet.getBoolean(JDBCConsts.DB_COLUMN_DELETE_PROTECTION)).thenReturn(true);
+        Mockito.when(mockResultSet.getInt(JDBCConsts.DB_COLUMN_MEMBER_EXPIRY_DAYS)).thenReturn(45);
+        Mockito.when(mockResultSet.getInt(JDBCConsts.DB_COLUMN_AS_DOMAIN_MEMBER_EXPIRY_DAYS)).thenReturn(30);
 
         JDBCConnection jdbcConn = new JDBCConnection(mockConn, true);
         SelfServeObjects selfServeObjects = jdbcConn.getSelfServeGroups("Champions", null, false);
@@ -16302,7 +16308,8 @@ public class JDBCConnectionTest {
 
         SelfServeObject object1 = new SelfServeObject().setDomainName("domain1").setName("group1")
                 .setSelfRenew(true).setSelfRenewMins(60).setReviewEnabled(true).setAuditEnabled(false)
-                .setDeleteProtection(true).setMemberStatus("none");
+                .setDeleteProtection(true).setMemberStatus("none")
+                .setMemberExpiryDays(45).setDomainMemberExpiryDays(30);
         assertEquals(objects.get(0), object1);
 
         // groups have no description column, so only the name is matched (case-insensitive);
@@ -16341,8 +16348,8 @@ public class JDBCConnectionTest {
         Mockito.when(mockResultSet.getString(JDBCConsts.DB_COLUMN_DOMAIN_NAME)).thenReturn("d");
         Mockito.when(mockResultSet.getString(JDBCConsts.DB_COLUMN_AS_ROLE_NAME))
                 .thenReturn("direct", "inherited", "pending", "none");
-        Mockito.when(mockResultSet.getBoolean(JDBCConsts.DB_COLUMN_AS_IS_MEMBER))
-                .thenReturn(true, false, false, false);
+        Mockito.when(mockResultSet.getObject(JDBCConsts.DB_COLUMN_AS_MEMBER_PRINCIPAL))
+                .thenReturn(Integer.valueOf(5), null, null, null);
         Mockito.when(mockResultSet.getString(JDBCConsts.DB_COLUMN_AS_INHERITED_FROM))
                 .thenReturn(null, "d:group.eng", null, null);
         Mockito.when(mockResultSet.getObject(JDBCConsts.DB_COLUMN_AS_PENDING_PRINCIPAL))
