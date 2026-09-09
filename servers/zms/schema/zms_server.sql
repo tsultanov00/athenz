@@ -111,6 +111,7 @@ CREATE TABLE IF NOT EXISTS `zms_server`.`role` (
   `notify_details` VARCHAR(512) NOT NULL DEFAULT '',
   PRIMARY KEY (`role_id`),
   UNIQUE INDEX `uq_domain_role` (`domain_id` ASC, `name` ASC),
+  INDEX `idx_self_serve` (`self_serve` ASC),
   CONSTRAINT `fk_role_domain`
     FOREIGN KEY (`domain_id`)
     REFERENCES `zms_server`.`domain` (`domain_id`)
