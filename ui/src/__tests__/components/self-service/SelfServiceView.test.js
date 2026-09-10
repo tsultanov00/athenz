@@ -27,7 +27,6 @@ const SEARCH_RESULTS = {
             name: 'security-platform-users',
             description: 'Day to day access to the Security Platform console.',
             memberStatus: 'none',
-            owner: 'paranoids-tools@example.com',
             maxExpiryDays: 90,
         },
         {
@@ -36,7 +35,6 @@ const SEARCH_RESULTS = {
             name: 'security-platform-reviewers',
             description: 'Review Security Platform scan exceptions.',
             memberStatus: 'none',
-            owner: 'paranoids-tools@example.com',
         },
         {
             type: 'role',
@@ -44,7 +42,6 @@ const SEARCH_RESULTS = {
             name: 'security-platform-auditors',
             description: 'Audit Security Platform scan coverage.',
             memberStatus: 'pending',
-            owner: 'athenz-grc@example.com',
             auditEnabled: true,
         },
         {
@@ -53,7 +50,6 @@ const SEARCH_RESULTS = {
             name: 'scanner-users',
             description: 'Run scans against domains you own.',
             memberStatus: 'member',
-            owner: 'paranoids-tools@example.com',
             inheritedFrom: 'paranoids.tools:group.security-champions',
         },
         {
@@ -63,7 +59,6 @@ const SEARCH_RESULTS = {
             description:
                 'Security champions for domains onboarded to the platform.',
             memberStatus: 'member',
-            owner: 'paranoids-tools@example.com',
         },
     ],
     domains: ['athenz.prod', 'paranoids.tools'],
@@ -111,11 +106,11 @@ describe('SelfServiceView', () => {
             getPageFeatureFlag: jest.fn().mockResolvedValue({}),
             searchSelfServe: jest
                 .fn()
-                .mockImplementation((substring, domain, member) => {
+                .mockImplementation((matchString, domain, member) => {
                     if (member) {
                         return Promise.resolve(MEMBERSHIPS);
                     }
-                    if (substring) {
+                    if (matchString) {
                         return Promise.resolve(SEARCH_RESULTS);
                     }
                     return Promise.resolve(EMPTY_SEARCH);
@@ -358,7 +353,7 @@ describe('SelfServiceView', () => {
             getPageFeatureFlag: jest.fn().mockResolvedValue({}),
             searchSelfServe: jest
                 .fn()
-                .mockImplementation((substring, domain, member) =>
+                .mockImplementation((matchString, domain, member) =>
                     member
                         ? Promise.resolve(memberships)
                         : Promise.resolve(EMPTY_SEARCH)
@@ -404,7 +399,7 @@ describe('SelfServiceView', () => {
             getPageFeatureFlag: jest.fn().mockResolvedValue({}),
             searchSelfServe: jest
                 .fn()
-                .mockImplementation((substring, domain, member) =>
+                .mockImplementation((matchString, domain, member) =>
                     member
                         ? Promise.resolve(memberships)
                         : Promise.resolve(EMPTY_SEARCH)

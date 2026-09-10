@@ -68,12 +68,6 @@ const Description = styled.div`
     margin-top: 6px;
 `;
 
-const Meta = styled.div`
-    color: ${colors.grey600};
-    font: 300 12px HelveticaNeue-Reg, Helvetica, Arial, sans-serif;
-    margin-top: 8px;
-`;
-
 const Actions = styled.div`
     align-items: center;
     display: flex;
@@ -318,29 +312,6 @@ export default class SelfServiceResultRow extends React.Component {
         return <Actions />;
     }
 
-    renderMeta(item) {
-        if (this.props.variant === 'pending') {
-            const parts = [];
-            if (item.requestedOn) {
-                parts.push(`Requested ${formatDate(item.requestedOn)}`);
-            }
-            if (item.owner) {
-                parts.push(`waiting on ${item.owner}`);
-            }
-            return (
-                <>
-                    {parts.length > 0 && <Meta>{parts.join(' · ')}</Meta>}
-                    {item.requestJustification && (
-                        <Meta>
-                            Your justification: {item.requestJustification}
-                        </Meta>
-                    )}
-                </>
-            );
-        }
-        return null;
-    }
-
     render() {
         const { item, selected, selectable, onToggle } = this.props;
         const key = resourceKey(item);
@@ -371,7 +342,6 @@ export default class SelfServiceResultRow extends React.Component {
                     {item.description ? (
                         <Description>{item.description}</Description>
                     ) : null}
-                    {this.renderMeta(item)}
                 </Info>
                 {this.renderActions(item)}
             </Row>

@@ -12452,14 +12452,14 @@
             "method": "GET",
             "path": "/selfserve/role",
             "name": "GetSelfServeRoles",
-            "comment": "Fetch all self-service roles across all domains whose name or description contains the given substring. The match is case-insensitive. If the substring is not specified, then all self-service roles are returned. Any authenticated principal may make this call since self-service roles are, by definition, discoverable and requestable by any user.",
+            "comment": "Fetch all self-service roles across all domains whose name or description contains the given match string. The match is case-insensitive. If the match string is not specified, then all self-service roles are returned. Any authenticated principal may make this call since self-service roles are, by definition, discoverable and requestable by any user.",
             "inputs": [
                 {
-                    "name": "substring",
+                    "name": "matchString",
                     "type": "String",
-                    "comment": "substring to match against the role name or description; if empty all self-service roles are returned",
+                    "comment": "string to match against the role name or description; if empty all self-service roles are returned",
                     "pathParam": false,
-                    "queryParam": "substring",
+                    "queryParam": "matchString",
                     "optional": true,
                     "flag": false
                 },
@@ -12501,14 +12501,14 @@
             "method": "GET",
             "path": "/selfserve/group",
             "name": "GetSelfServeGroups",
-            "comment": "Fetch all self-service groups across all domains whose name contains the given substring. The match is case-insensitive. If the substring is not specified, then all self-service groups are returned. Any authenticated principal may make this call since self-service groups are, by definition, discoverable and requestable by any user.",
+            "comment": "Fetch all self-service groups across all domains whose name contains the given match string. The match is case-insensitive. If the match string is not specified, then all self-service groups are returned. Any authenticated principal may make this call since self-service groups are, by definition, discoverable and requestable by any user.",
             "inputs": [
                 {
-                    "name": "substring",
+                    "name": "matchString",
                     "type": "String",
-                    "comment": "substring to match against the group name; if empty all self-service groups are returned",
+                    "comment": "string to match against the group name; if empty all self-service groups are returned",
                     "pathParam": false,
-                    "queryParam": "substring",
+                    "queryParam": "matchString",
                     "optional": true,
                     "flag": false
                 },

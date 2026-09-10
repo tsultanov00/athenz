@@ -829,11 +829,11 @@ const Api = (req) => {
             });
         },
 
-        searchSelfServe(substring, domain, member) {
+        searchSelfServe(matchString, domain, member) {
             return new Promise((resolve, reject) => {
                 fetchr
                     .read('self-serve-search')
-                    .params({ substring, domain, member })
+                    .params({ matchString, domain, member })
                     .end((err, data) => {
                         if (err) {
                             reject(err);

@@ -61,7 +61,7 @@ const setupApi = (updateResult) => {
         getPageFeatureFlag: jest.fn().mockResolvedValue({}),
         searchSelfServe: jest
             .fn()
-            .mockImplementation((substring, domain, member) =>
+            .mockImplementation((matchString, domain, member) =>
                 member
                     ? Promise.resolve(membershipsWith())
                     : Promise.resolve({

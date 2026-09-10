@@ -32,32 +32,28 @@ const mockClient = (methods) => {
 describe('selfServeZms', () => {
     it('rejects when the ZMS client has no self-serve search method', async () => {
         await expect(
-            selfServeZms.search({}, { substring: 'x' })
+            selfServeZms.search({}, { matchString: 'x' })
         ).rejects.toMatchObject({ status: 501 });
     });
 
     it('maps getSelfServeRoles plus getSelfServeGroups in parallel', async () => {
         const zms = mockClient({
             getSelfServeRoles: () => ({
-                roles: [
-                    {
-                        domainName: 'd1',
-                        roleName: 'role-a',
-                        memberStatus: 'none',
-                    },
+                list: [
+                    { domainName: 'd1', name: 'role-a', memberStatus: 'none' },
                 ],
             }),
             getSelfServeGroups: () => ({
-                groups: [
+                list: [
                     {
                         domainName: 'd1',
-                        groupName: 'group-a',
+                        name: 'group-a',
                         memberStatus: 'member',
                     },
                 ],
             }),
         });
-        const data = await selfServeZms.search(zms, { substring: 'a' });
+        const data = await selfServeZms.search(zms, { matchString: 'a' });
         expect(data.list.map((item) => item.name).sort()).toEqual([
             'group-a',
             'role-a',
@@ -79,7 +75,7 @@ describe('selfServeZms', () => {
                 list: [{ domainName: 'd1', name: 'platform-team' }],
             }),
         });
-        const data = await selfServeZms.search(zms, { substring: 'a' });
+        const data = await selfServeZms.search(zms, { matchString: 'a' });
         expect(
             data.list.find((item) => item.name === 'sredb-readers').type
         ).toBe('role');
@@ -99,7 +95,7 @@ describe('selfServeZms', () => {
             getSelfServeGroups: () => ({ list: [] }),
         });
         const data = await selfServeZms.search(zms, {
-            substring: 'role',
+            matchString: 'role',
             domain: 'd1',
         });
         expect(data.list.map((item) => item.name)).toEqual(['role-a']);
@@ -142,7 +138,7 @@ describe('selfServeZms', () => {
             },
         });
         const data = await selfServeZms.search(zms, {
-            substring: '',
+            matchString: '',
             member: true,
         });
 
@@ -177,7 +173,7 @@ describe('selfServeZms', () => {
                 };
             },
         });
-        const data = await selfServeZms.search(zms, { substring: 'x' });
+        const data = await selfServeZms.search(zms, { matchString: 'x' });
         expect(data.list.map((item) => item.name)).toEqual(['one', 'two']);
         expect(calls[1].skip).toBe('page-2');
     });

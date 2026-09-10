@@ -20,54 +20,47 @@ const {
 } = require('../../../server/utils/selfServeContract');
 
 describe('selfServeContract', () => {
-    it('maps the designed ZMS search payload into UI items', () => {
-        const mapped = toSelfServeSearchResponse({
-            roles: [
-                {
-                    domainName: 'paranoids.tools',
-                    roleName: 'security-platform-users',
-                    description: 'Day to day access',
-                    memberStatus: 'NONE',
-                    roleOwner: 'paranoids-tools@example.com',
-                    selfRenew: true,
-                    selfRenewMins: 43200,
-                    reviewEnabled: true,
-                    auditEnabled: false,
-                    deleteProtection: true,
-                    memberExpiryDays: 90,
-                    domainMemberExpiryDays: 30,
-                },
-                {
-                    name: 'athenz.prod:role.security-platform-auditors',
-                    description: 'Audit coverage',
-                    approved: false,
-                    expiration: '2026-09-12T00:00:00.000Z',
-                    requestTime: '2026-08-12T15:01:00.000Z',
-                    auditRef: 'Q3 scan coverage',
-                },
-            ],
-            groups: [
-                {
-                    domainName: 'paranoids.tools',
-                    groupName: 'security-champions',
-                    description: 'Champions group',
-                    memberStatus: 'member',
-                },
-            ],
-        });
+    it('maps SelfServeObject role fields into UI items', () => {
+        const mapped = toSelfServeSearchResponse(
+            {
+                list: [
+                    {
+                        domainName: 'paranoids.tools',
+                        name: 'security-platform-users',
+                        description: 'Day to day access',
+                        memberStatus: 'NONE',
+                        selfRenew: true,
+                        selfRenewMins: 43200,
+                        reviewEnabled: true,
+                        auditEnabled: false,
+                        deleteProtection: true,
+                        memberExpiryDays: 90,
+                        domainMemberExpiryDays: 30,
+                    },
+                    {
+                        domainName: 'athenz.prod',
+                        name: 'security-platform-auditors',
+                        description: 'Audit coverage',
+                        memberStatus: 'pending',
+                        expiration: '2026-09-12T00:00:00.000Z',
+                    },
+                ],
+            },
+            { type: 'role' }
+        );
 
-        expect(mapped.list).toHaveLength(3);
+        expect(mapped.list).toHaveLength(2);
         expect(mapped.list[0]).toEqual(
             expect.objectContaining({
                 type: 'role',
                 domainName: 'paranoids.tools',
                 name: 'security-platform-users',
                 memberStatus: 'none',
-                owner: 'paranoids-tools@example.com',
                 selfRenew: true,
                 selfRenewMins: 43200,
                 reviewEnabled: true,
                 deleteProtection: true,
+                // effective cap is the lower of role (90) and domain (30)
                 maxExpiryDays: 30,
             })
         );
@@ -78,19 +71,48 @@ describe('selfServeContract', () => {
                 name: 'security-platform-auditors',
                 memberStatus: 'pending',
                 expiration: '2026-09-12T00:00:00.000Z',
-                requestedOn: '2026-08-12T15:01:00.000Z',
-                requestJustification: 'Q3 scan coverage',
             })
         );
-        expect(mapped.list[2]).toEqual(
+        expect(mapped.domains).toEqual(['athenz.prod', 'paranoids.tools']);
+        expect(mapped.membershipCount).toBeUndefined();
+    });
+
+    it('stamps the type from the endpoint option', () => {
+        const mapped = toSelfServeSearchResponse(
+            {
+                list: [
+                    {
+                        domainName: 'paranoids.tools',
+                        name: 'security-champions',
+                        memberStatus: 'member',
+                    },
+                ],
+            },
+            { type: 'group' }
+        );
+        expect(mapped.list[0]).toEqual(
             expect.objectContaining({
                 type: 'group',
                 name: 'security-champions',
                 memberStatus: 'member',
             })
         );
-        expect(mapped.domains).toEqual(['athenz.prod', 'paranoids.tools']);
-        expect(mapped.membershipCount).toBeUndefined();
+    });
+
+    it('reads memberStatus and inheritedFrom directly from the contract', () => {
+        const item = toSelfServeItem(
+            {
+                domainName: 'paranoids.tools',
+                name: 'scanner-users',
+                memberStatus: 'member',
+                inheritedFrom: 'paranoids.tools:group.security-champions',
+            },
+            'role'
+        );
+        expect(item.inheritedFrom).toBe(
+            'paranoids.tools:group.security-champions'
+        );
+        expect(item.memberStatus).toBe('member');
     });
 
     it('counts memberships only for member=true searches without a backend total', () => {
@@ -116,49 +138,20 @@ describe('selfServeContract', () => {
         expect(mapped.membershipCount).toBe(1);
     });
 
-    it('treats a group memberName as inheritedFrom', () => {
-        const item = toSelfServeItem({
-            domainName: 'paranoids.tools',
-            name: 'scanner-users',
-            memberStatus: 'member',
-            memberName: 'paranoids.tools:group.security-champions',
-        });
-        expect(item.inheritedFrom).toBe(
-            'paranoids.tools:group.security-champions'
-        );
-        expect(item.memberStatus).toBe('member');
-    });
-
-    it('flattens a nested membership object', () => {
-        const item = toSelfServeItem({
-            domainName: 'sports.prod',
-            roleName: 'readers',
-            membership: {
-                approved: false,
-                expiration: '2026-10-01T00:00:00.000Z',
-                requestTime: '2026-08-01T00:00:00.000Z',
-            },
-        });
-        expect(item.memberStatus).toBe('pending');
-        expect(item.expiration).toBe('2026-10-01T00:00:00.000Z');
-        expect(item.requestedOn).toBe('2026-08-01T00:00:00.000Z');
-    });
-
-    it('sends designed ZMS search query names plus aliases', () => {
+    it('maps the search term to the ZMS matchString query param', () => {
         expect(
             toZmsSearchParams({
-                substring: 'security-platform',
+                matchString: 'security-platform',
                 domain: 'paranoids.tools',
                 member: 'true',
                 skip: 'abc',
             })
         ).toEqual(
             expect.objectContaining({
-                substring: 'security-platform',
-                query: 'security-platform',
+                matchString: 'security-platform',
                 domain: 'paranoids.tools',
-                domainName: 'paranoids.tools',
                 member: true,
+                memberOnly: true,
                 skip: 'abc',
                 next: 'abc',
             })
