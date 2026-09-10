@@ -3503,9 +3503,9 @@ public class ZMSSchema {
 ;
 
         sb.resource("SelfServeObjects", "GET", "/selfserve/role")
-            .comment("Fetch all self-service roles across all domains whose name or description contains the given substring. The match is case-insensitive. If the substring is not specified, then all self-service roles are returned. Any authenticated principal may make this call since self-service roles are, by definition, discoverable and requestable by any user.")
+            .comment("Fetch all self-service roles across all domains whose name or description contains the given match string. The match is case-insensitive. If the match string is not specified, then all self-service roles are returned. Any authenticated principal may make this call since self-service roles are, by definition, discoverable and requestable by any user.")
             .name("GetSelfServeRoles")
-            .queryParam("substring", "substring", "String", null, "substring to match against the role name or description; if empty all self-service roles are returned")
+            .queryParam("matchString", "matchString", "String", null, "string to match against the role name or description; if empty all self-service roles are returned")
             .queryParam("memberOnly", "memberOnly", "Bool", false, "if true, only return roles the calling principal is already a member of or has a pending request for")
             .auth("", "", true)
             .expected("OK")
@@ -3521,9 +3521,9 @@ public class ZMSSchema {
 ;
 
         sb.resource("SelfServeObjects", "GET", "/selfserve/group")
-            .comment("Fetch all self-service groups across all domains whose name contains the given substring. The match is case-insensitive. If the substring is not specified, then all self-service groups are returned. Any authenticated principal may make this call since self-service groups are, by definition, discoverable and requestable by any user.")
+            .comment("Fetch all self-service groups across all domains whose name contains the given match string. The match is case-insensitive. If the match string is not specified, then all self-service groups are returned. Any authenticated principal may make this call since self-service groups are, by definition, discoverable and requestable by any user.")
             .name("GetSelfServeGroups")
-            .queryParam("substring", "substring", "String", null, "substring to match against the group name; if empty all self-service groups are returned")
+            .queryParam("matchString", "matchString", "String", null, "string to match against the group name; if empty all self-service groups are returned")
             .queryParam("memberOnly", "memberOnly", "Bool", false, "if true, only return groups the calling principal is already a member of or has a pending request for")
             .auth("", "", true)
             .expected("OK")

@@ -4592,11 +4592,11 @@ public class ZMSRDLGeneratedClient {
         }
     }
 
-    public SelfServeObjects getSelfServeRoles(String substring, Boolean memberOnly) throws URISyntaxException, IOException {
+    public SelfServeObjects getSelfServeRoles(String matchString, Boolean memberOnly) throws URISyntaxException, IOException {
         UriTemplateBuilder uriTemplateBuilder = new UriTemplateBuilder(baseUrl, "/selfserve/role");
         URIBuilder uriBuilder = new URIBuilder(uriTemplateBuilder.getUri());
-        if (substring != null) {
-            uriBuilder.setParameter("substring", substring);
+        if (matchString != null) {
+            uriBuilder.setParameter("matchString", matchString);
         }
         if (memberOnly != null) {
             uriBuilder.setParameter("memberOnly", String.valueOf(memberOnly));
@@ -4625,11 +4625,11 @@ public class ZMSRDLGeneratedClient {
         }
     }
 
-    public SelfServeObjects getSelfServeGroups(String substring, Boolean memberOnly) throws URISyntaxException, IOException {
+    public SelfServeObjects getSelfServeGroups(String matchString, Boolean memberOnly) throws URISyntaxException, IOException {
         UriTemplateBuilder uriTemplateBuilder = new UriTemplateBuilder(baseUrl, "/selfserve/group");
         URIBuilder uriBuilder = new URIBuilder(uriTemplateBuilder.getUri());
-        if (substring != null) {
-            uriBuilder.setParameter("substring", substring);
+        if (matchString != null) {
+            uriBuilder.setParameter("matchString", matchString);
         }
         if (memberOnly != null) {
             uriBuilder.setParameter("memberOnly", String.valueOf(memberOnly));

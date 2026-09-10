@@ -720,7 +720,7 @@ public class JDBCConnection implements ObjectStoreConnection {
             + " role.domain_id=domain.domain_id JOIN role_member ON role.role_id=role_member.role_id"
             + " WHERE role_member.principal_id=? AND role_member.active=true AND role.name='admin')"
             + " ORDER BY domain.name, principal_group.name;";
-    private static final String SQL_GET_SELF_SERVE_ROLES = "SELECT domain.name AS domain_name, role.name AS role_name,"
+    private static final String SQL_SELF_SERVE_ROLES_BASE = "SELECT domain.name AS domain_name, role.name AS role_name,"
             + " role.description, role.self_renew, role.self_renew_mins, role.review_enabled, role.audit_enabled,"
             + " role.delete_protection, role.member_expiry_days,"
             + " domain.member_expiry_days AS domain_member_expiry_days,"
@@ -736,11 +736,13 @@ public class JDBCConnection implements ObjectStoreConnection {
             + " JOIN principal gp ON gp.name=CONCAT(gd.name, ':group.', pg.name)"
             + " JOIN role_member rmg ON rmg.principal_id=gp.principal_id WHERE pgm.principal_id=? GROUP BY rmg.role_id) inh"
             + " ON inh.role_id=role.role_id WHERE role.self_serve=true AND role.trust=''"
-            + " AND (LOWER(role.name) LIKE ? OR LOWER(role.description) LIKE ?)";
-    private static final String SQL_GET_SELF_SERVE_ROLES_MEMBER_FILTER =
-            " AND (rm.principal_id IS NOT NULL OR prm.principal_id IS NOT NULL OR inh.role_id IS NOT NULL)";
-    private static final String SQL_GET_SELF_SERVE_ROLES_SUFFIX = " ORDER BY domain.name, role.name;";
-    private static final String SQL_GET_SELF_SERVE_GROUPS = "SELECT domain.name AS domain_name,"
+            + " AND (role.name LIKE ? OR LOWER(role.description) LIKE ?)";
+    private static final String SQL_GET_SELF_SERVE_ROLES = SQL_SELF_SERVE_ROLES_BASE
+            + " ORDER BY domain.name, role.name;";
+    private static final String SQL_GET_SELF_SERVE_ROLES_MEMBER = SQL_SELF_SERVE_ROLES_BASE
+            + " AND (rm.principal_id IS NOT NULL OR prm.principal_id IS NOT NULL OR inh.role_id IS NOT NULL)"
+            + " ORDER BY domain.name, role.name;";
+    private static final String SQL_SELF_SERVE_GROUPS_BASE = "SELECT domain.name AS domain_name,"
             + " principal_group.name AS group_name, principal_group.self_renew, principal_group.self_renew_mins,"
             + " principal_group.review_enabled, principal_group.audit_enabled, principal_group.delete_protection,"
             + " principal_group.member_expiry_days,"
@@ -750,10 +752,12 @@ public class JDBCConnection implements ObjectStoreConnection {
             + " FROM principal_group JOIN domain ON principal_group.domain_id=domain.domain_id"
             + " LEFT JOIN principal_group_member gm ON gm.group_id=principal_group.group_id AND gm.principal_id=?"
             + " LEFT JOIN pending_principal_group_member pgm ON pgm.group_id=principal_group.group_id AND pgm.principal_id=?"
-            + " WHERE principal_group.self_serve=true AND LOWER(principal_group.name) LIKE ?";
-    private static final String SQL_GET_SELF_SERVE_GROUPS_MEMBER_FILTER =
-            " AND (gm.principal_id IS NOT NULL OR pgm.principal_id IS NOT NULL)";
-    private static final String SQL_GET_SELF_SERVE_GROUPS_SUFFIX = " ORDER BY domain.name, principal_group.name;";
+            + " WHERE principal_group.self_serve=true AND principal_group.name LIKE ?";
+    private static final String SQL_GET_SELF_SERVE_GROUPS = SQL_SELF_SERVE_GROUPS_BASE
+            + " ORDER BY domain.name, principal_group.name;";
+    private static final String SQL_GET_SELF_SERVE_GROUPS_MEMBER = SQL_SELF_SERVE_GROUPS_BASE
+            + " AND (gm.principal_id IS NOT NULL OR pgm.principal_id IS NOT NULL)"
+            + " ORDER BY domain.name, principal_group.name;";
     private static final String SQL_INSERT_DOMAIN_CONTACT = "INSERT INTO domain_contacts (domain_id, type, name) VALUES (?,?,?);";
     private static final String SQL_UPDATE_DOMAIN_CONTACT = "UPDATE domain_contacts SET name=? WHERE domain_id=? and type=?;";
     private static final String SQL_DELETE_DOMAIN_CONTACT = "DELETE FROM domain_contacts WHERE domain_id=? AND type=?;";
@@ -8336,20 +8340,18 @@ public class JDBCConnection implements ObjectStoreConnection {
         return new ReviewObjects().setList(reviewRoles);
     }
 
-    static String selfServeSearchPattern(final String substring) {
-        return "%" + (substring == null ? "" : substring.toLowerCase()) + "%";
+    static String selfServeSearchPattern(final String matchString) {
+        return matchString == null ? "%" : "%" + matchString + "%";
     }
 
     @Override
-    public SelfServeObjects getSelfServeRoles(String substring, String principal, boolean memberOnly) throws ServerResourceException {
+    public SelfServeObjects getSelfServeRoles(String matchString, String principal, boolean memberOnly) throws ServerResourceException {
 
         final String caller = "getSelfServeRoles";
 
-        final String searchPattern = selfServeSearchPattern(substring);
+        final String searchPattern = selfServeSearchPattern(matchString);
         final int principalId = StringUtil.isEmpty(principal) ? 0 : getPrincipalId(principal);
-        final String sql = SQL_GET_SELF_SERVE_ROLES
-                + (memberOnly ? SQL_GET_SELF_SERVE_ROLES_MEMBER_FILTER : "")
-                + SQL_GET_SELF_SERVE_ROLES_SUFFIX;
+        final String sql = memberOnly ? SQL_GET_SELF_SERVE_ROLES_MEMBER : SQL_GET_SELF_SERVE_ROLES;
         List<SelfServeObject> selfServeRoles = new ArrayList<>();
         try (PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setInt(1, principalId);
@@ -8379,15 +8381,13 @@ public class JDBCConnection implements ObjectStoreConnection {
     }
 
     @Override
-    public SelfServeObjects getSelfServeGroups(String substring, String principal, boolean memberOnly) throws ServerResourceException {
+    public SelfServeObjects getSelfServeGroups(String matchString, String principal, boolean memberOnly) throws ServerResourceException {
 
         final String caller = "getSelfServeGroups";
 
-        final String searchPattern = selfServeSearchPattern(substring);
+        final String searchPattern = selfServeSearchPattern(matchString);
         final int principalId = StringUtil.isEmpty(principal) ? 0 : getPrincipalId(principal);
-        final String sql = SQL_GET_SELF_SERVE_GROUPS
-                + (memberOnly ? SQL_GET_SELF_SERVE_GROUPS_MEMBER_FILTER : "")
-                + SQL_GET_SELF_SERVE_GROUPS_SUFFIX;
+        final String sql = memberOnly ? SQL_GET_SELF_SERVE_GROUPS_MEMBER : SQL_GET_SELF_SERVE_GROUPS;
         List<SelfServeObject> selfServeGroups = new ArrayList<>();
         try (PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setInt(1, principalId);

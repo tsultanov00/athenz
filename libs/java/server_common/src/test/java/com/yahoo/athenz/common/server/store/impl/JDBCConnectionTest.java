@@ -16218,7 +16218,7 @@ public class JDBCConnectionTest {
         Mockito.when(mockResultSet.getInt(JDBCConsts.DB_COLUMN_AS_DOMAIN_MEMBER_EXPIRY_DAYS)).thenReturn(30).thenReturn(30);
 
         JDBCConnection jdbcConn = new JDBCConnection(mockConn, true);
-        SelfServeObjects selfServeObjects = jdbcConn.getSelfServeRoles("Platform", null, false);
+        SelfServeObjects selfServeObjects = jdbcConn.getSelfServeRoles("platform", null, false);
         assertNotNull(selfServeObjects);
         List<SelfServeObject> objects = selfServeObjects.getList();
         assertNotNull(objects);
@@ -16242,8 +16242,8 @@ public class JDBCConnectionTest {
         Mockito.verify(mockPrepStmt, times(1)).setInt(2, 0);
         Mockito.verify(mockPrepStmt, times(1)).setInt(3, 0);
 
-        // the substring is lowercased and wrapped so the LIKE match is case-insensitive
-        // against both the role name and the role description
+        // the match string is wrapped for a substring LIKE match against both the
+        // role name and the role description
 
         Mockito.verify(mockPrepStmt, times(1)).setString(4, "%platform%");
         Mockito.verify(mockPrepStmt, times(1)).setString(5, "%platform%");
@@ -16252,7 +16252,7 @@ public class JDBCConnectionTest {
     }
 
     @Test
-    public void testGetSelfServeRolesNullSubstring() throws Exception {
+    public void testGetSelfServeRolesNullMatchString() throws Exception {
 
         Mockito.when(mockResultSet.next()).thenReturn(false);
 
@@ -16261,10 +16261,10 @@ public class JDBCConnectionTest {
         assertNotNull(selfServeObjects);
         assertTrue(selfServeObjects.getList().isEmpty());
 
-        // a null substring matches all self-service roles via a "%%" pattern
+        // a null match string matches all self-service roles via a "%" pattern
 
-        Mockito.verify(mockPrepStmt, times(1)).setString(4, "%%");
-        Mockito.verify(mockPrepStmt, times(1)).setString(5, "%%");
+        Mockito.verify(mockPrepStmt, times(1)).setString(4, "%");
+        Mockito.verify(mockPrepStmt, times(1)).setString(5, "%");
 
         jdbcConn.close();
     }
@@ -16300,7 +16300,8 @@ public class JDBCConnectionTest {
         Mockito.when(mockResultSet.getInt(JDBCConsts.DB_COLUMN_AS_DOMAIN_MEMBER_EXPIRY_DAYS)).thenReturn(30);
 
         JDBCConnection jdbcConn = new JDBCConnection(mockConn, true);
-        SelfServeObjects selfServeObjects = jdbcConn.getSelfServeGroups("Champions", null, false);
+        // the match string reaches this layer already trimmed and lower-cased by ZMS
+        SelfServeObjects selfServeObjects = jdbcConn.getSelfServeGroups("champions", null, false);
         assertNotNull(selfServeObjects);
         List<SelfServeObject> objects = selfServeObjects.getList();
         assertNotNull(objects);
@@ -16312,7 +16313,7 @@ public class JDBCConnectionTest {
                 .setMemberExpiryDays(45).setDomainMemberExpiryDays(30);
         assertEquals(objects.get(0), object1);
 
-        // groups have no description column, so only the name is matched (case-insensitive);
+        // groups have no description column, so only the name is matched;
         // the overlay join uses principal id 0 when no principal is supplied
 
         Mockito.verify(mockPrepStmt, times(1)).setInt(1, 0);

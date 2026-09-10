@@ -13459,7 +13459,7 @@ public class ZMSImpl implements Authorizer, KeyStore, ZMSHandler {
     }
 
     @Override
-    public SelfServeObjects getSelfServeRoles(ResourceContext ctx, String substring, Boolean memberOnly) {
+    public SelfServeObjects getSelfServeRoles(ResourceContext ctx, String matchString, Boolean memberOnly) {
 
         final String caller = ctx.getApiName();
         logPrincipal(ctx);
@@ -13468,16 +13468,16 @@ public class ZMSImpl implements Authorizer, KeyStore, ZMSHandler {
 
         // self-service roles are, by definition, discoverable and requestable by any
         // authenticated principal, so no additional authorization check is required.
-        // the substring is matched (case-insensitive) against the role name or description.
+        // the match string is matched (case-insensitive) against the role name or description.
         // the calling principal's own membership state (member/pending/inherited) is
         // overlaid on each object so the UI can populate the "my roles" view directly.
 
         final String principal = ((RsrcCtxWrapper) ctx).principal().getFullName();
-        return dbService.getSelfServeRoles(normalizeSelfServeSubstring(substring), principal, memberOnly == Boolean.TRUE);
+        return dbService.getSelfServeRoles(normalizeSelfServeMatchString(matchString), principal, memberOnly == Boolean.TRUE);
     }
 
     @Override
-    public SelfServeObjects getSelfServeGroups(ResourceContext ctx, String substring, Boolean memberOnly) {
+    public SelfServeObjects getSelfServeGroups(ResourceContext ctx, String matchString, Boolean memberOnly) {
 
         final String caller = ctx.getApiName();
         logPrincipal(ctx);
@@ -13486,16 +13486,16 @@ public class ZMSImpl implements Authorizer, KeyStore, ZMSHandler {
 
         // self-service groups are, by definition, discoverable and requestable by any
         // authenticated principal, so no additional authorization check is required.
-        // the substring is matched (case-insensitive) against the group name.
+        // the match string is matched (case-insensitive) against the group name.
         // the calling principal's own membership state (member/pending) is overlaid on
         // each object so the UI can populate the "my groups" view directly.
 
         final String principal = ((RsrcCtxWrapper) ctx).principal().getFullName();
-        return dbService.getSelfServeGroups(normalizeSelfServeSubstring(substring), principal, memberOnly == Boolean.TRUE);
+        return dbService.getSelfServeGroups(normalizeSelfServeMatchString(matchString), principal, memberOnly == Boolean.TRUE);
     }
 
-    static String normalizeSelfServeSubstring(final String substring) {
-        return substring == null ? null : substring.trim().toLowerCase();
+    static String normalizeSelfServeMatchString(final String matchString) {
+        return matchString == null ? null : matchString.trim().toLowerCase();
     }
 
     boolean isAllowedObjectReviewLookup(Principal principal, final String checkPrincipal) {

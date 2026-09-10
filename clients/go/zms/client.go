@@ -4627,9 +4627,9 @@ func (client ZMSClient) GetGroupsForReview(principal ResourceName) (*ReviewObjec
 	}
 }
 
-func (client ZMSClient) GetSelfServeRoles(substring string, memberOnly *bool) (*SelfServeObjects, error) {
+func (client ZMSClient) GetSelfServeRoles(matchString string, memberOnly *bool) (*SelfServeObjects, error) {
 	var data *SelfServeObjects
-	url := client.URL + "/selfserve/role" + encodeParams(encodeStringParam("substring", string(substring), ""), encodeOptionalBoolParam("memberOnly", memberOnly))
+	url := client.URL + "/selfserve/role" + encodeParams(encodeStringParam("matchString", string(matchString), ""), encodeOptionalBoolParam("memberOnly", memberOnly))
 	resp, err := client.httpGet(url, nil)
 	if err != nil {
 		return data, err
@@ -4659,9 +4659,9 @@ func (client ZMSClient) GetSelfServeRoles(substring string, memberOnly *bool) (*
 	}
 }
 
-func (client ZMSClient) GetSelfServeGroups(substring string, memberOnly *bool) (*SelfServeObjects, error) {
+func (client ZMSClient) GetSelfServeGroups(matchString string, memberOnly *bool) (*SelfServeObjects, error) {
 	var data *SelfServeObjects
-	url := client.URL + "/selfserve/group" + encodeParams(encodeStringParam("substring", string(substring), ""), encodeOptionalBoolParam("memberOnly", memberOnly))
+	url := client.URL + "/selfserve/group" + encodeParams(encodeStringParam("matchString", string(matchString), ""), encodeOptionalBoolParam("memberOnly", memberOnly))
 	resp, err := client.httpGet(url, nil)
 	if err != nil {
 		return data, err

@@ -3059,9 +3059,9 @@ func init() {
 	sb.AddResource(mGetGroupsForReview.Build())
 
 	mGetSelfServeRoles := rdl.NewResourceBuilder("SelfServeObjects", "GET", "/selfserve/role")
-	mGetSelfServeRoles.Comment("Fetch all self-service roles across all domains whose name or description contains the given substring. The match is case-insensitive. If the substring is not specified, then all self-service roles are returned. Any authenticated principal may make this call since self-service roles are, by definition, discoverable and requestable by any user.")
+	mGetSelfServeRoles.Comment("Fetch all self-service roles across all domains whose name or description contains the given match string. The match is case-insensitive. If the match string is not specified, then all self-service roles are returned. Any authenticated principal may make this call since self-service roles are, by definition, discoverable and requestable by any user.")
 	mGetSelfServeRoles.Name("GetSelfServeRoles")
-	mGetSelfServeRoles.Input("substring", "String", false, "substring", "", true, nil, "substring to match against the role name or description; if empty all self-service roles are returned")
+	mGetSelfServeRoles.Input("matchString", "String", false, "matchString", "", true, nil, "string to match against the role name or description; if empty all self-service roles are returned")
 	mGetSelfServeRoles.Input("memberOnly", "Bool", false, "memberOnly", "", true, false, "if true, only return roles the calling principal is already a member of or has a pending request for")
 	mGetSelfServeRoles.Auth("", "", true, "")
 	mGetSelfServeRoles.Exception("BAD_REQUEST", "ResourceError", "")
@@ -3072,9 +3072,9 @@ func init() {
 	sb.AddResource(mGetSelfServeRoles.Build())
 
 	mGetSelfServeGroups := rdl.NewResourceBuilder("SelfServeObjects", "GET", "/selfserve/group")
-	mGetSelfServeGroups.Comment("Fetch all self-service groups across all domains whose name contains the given substring. The match is case-insensitive. If the substring is not specified, then all self-service groups are returned. Any authenticated principal may make this call since self-service groups are, by definition, discoverable and requestable by any user.")
+	mGetSelfServeGroups.Comment("Fetch all self-service groups across all domains whose name contains the given match string. The match is case-insensitive. If the match string is not specified, then all self-service groups are returned. Any authenticated principal may make this call since self-service groups are, by definition, discoverable and requestable by any user.")
 	mGetSelfServeGroups.Name("GetSelfServeGroups")
-	mGetSelfServeGroups.Input("substring", "String", false, "substring", "", true, nil, "substring to match against the group name; if empty all self-service groups are returned")
+	mGetSelfServeGroups.Input("matchString", "String", false, "matchString", "", true, nil, "string to match against the group name; if empty all self-service groups are returned")
 	mGetSelfServeGroups.Input("memberOnly", "Bool", false, "memberOnly", "", true, false, "if true, only return groups the calling principal is already a member of or has a pending request for")
 	mGetSelfServeGroups.Auth("", "", true, "")
 	mGetSelfServeGroups.Exception("BAD_REQUEST", "ResourceError", "")

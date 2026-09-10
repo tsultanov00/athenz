@@ -325,9 +325,9 @@ public class ZMSSelfServeTest {
     }
 
     @Test
-    public void testNormalizeSelfServeSubstring() {
-        assertNull(ZMSImpl.normalizeSelfServeSubstring(null));
-        assertEquals(ZMSImpl.normalizeSelfServeSubstring("  MixedCase  "), "mixedcase");
-        assertEquals(ZMSImpl.normalizeSelfServeSubstring(""), "");
+    public void testNormalizeSelfServeMatchString() {
+        assertNull(ZMSImpl.normalizeSelfServeMatchString(null));
+        assertEquals(ZMSImpl.normalizeSelfServeMatchString("  MixedCase  "), "mixedcase");
+        assertEquals(ZMSImpl.normalizeSelfServeMatchString(""), "");
     }
 }
