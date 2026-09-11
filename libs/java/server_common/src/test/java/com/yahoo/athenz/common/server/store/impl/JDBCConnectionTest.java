@@ -16236,17 +16236,8 @@ public class JDBCConnectionTest {
                 .setMemberExpiryDays(0).setDomainMemberExpiryDays(30);
         assertEquals(objects.get(1), object2);
 
-        // with no principal supplied the overlay join uses id 0 (no match)
-
-        Mockito.verify(mockPrepStmt, times(1)).setInt(1, 0);
-        Mockito.verify(mockPrepStmt, times(1)).setInt(2, 0);
-        Mockito.verify(mockPrepStmt, times(1)).setInt(3, 0);
-
-        // the match string is wrapped for a substring LIKE match against both the
-        // role name and the role description
-
-        Mockito.verify(mockPrepStmt, times(1)).setString(4, "%platform%");
-        Mockito.verify(mockPrepStmt, times(1)).setString(5, "%platform%");
+        Mockito.verify(mockPrepStmt, times(1)).setString(1, "%platform%");
+        Mockito.verify(mockPrepStmt, times(1)).setString(2, "%platform%");
 
         jdbcConn.close();
     }
@@ -16263,8 +16254,37 @@ public class JDBCConnectionTest {
 
         // a null match string matches all self-service roles via a "%" pattern
 
-        Mockito.verify(mockPrepStmt, times(1)).setString(4, "%");
-        Mockito.verify(mockPrepStmt, times(1)).setString(5, "%");
+        Mockito.verify(mockPrepStmt, times(1)).setString(1, "%");
+        Mockito.verify(mockPrepStmt, times(1)).setString(2, "%");
+
+        jdbcConn.close();
+    }
+
+    @Test
+    public void testGetSelfServeRolesUnknownPrincipalDiscovery() throws Exception {
+
+        Mockito.when(mockResultSet.next()).thenReturn(false, true, false);
+        Mockito.when(mockResultSet.getString(JDBCConsts.DB_COLUMN_DOMAIN_NAME)).thenReturn("domain1");
+        Mockito.when(mockResultSet.getString(JDBCConsts.DB_COLUMN_AS_ROLE_NAME)).thenReturn("role1");
+        Mockito.when(mockResultSet.getString(JDBCConsts.DB_COLUMN_DESCRIPTION)).thenReturn("desc1");
+        Mockito.when(mockResultSet.getBoolean(JDBCConsts.DB_COLUMN_SELF_RENEW)).thenReturn(false);
+        Mockito.when(mockResultSet.getInt(JDBCConsts.DB_COLUMN_SELF_RENEW_MINS)).thenReturn(0);
+        Mockito.when(mockResultSet.getBoolean(JDBCConsts.DB_COLUMN_REVIEW_ENABLED)).thenReturn(false);
+        Mockito.when(mockResultSet.getBoolean(JDBCConsts.DB_COLUMN_AUDIT_ENABLED)).thenReturn(false);
+        Mockito.when(mockResultSet.getBoolean(JDBCConsts.DB_COLUMN_DELETE_PROTECTION)).thenReturn(false);
+        Mockito.when(mockResultSet.getInt(JDBCConsts.DB_COLUMN_MEMBER_EXPIRY_DAYS)).thenReturn(90);
+        Mockito.when(mockResultSet.getInt(JDBCConsts.DB_COLUMN_AS_DOMAIN_MEMBER_EXPIRY_DAYS)).thenReturn(30);
+
+        JDBCConnection jdbcConn = new JDBCConnection(mockConn, true);
+        SelfServeObjects selfServeObjects = jdbcConn.getSelfServeRoles("platform", "user.unknown", false);
+        assertNotNull(selfServeObjects);
+        assertEquals(selfServeObjects.getList().size(), 1);
+        assertEquals(selfServeObjects.getList().get(0).getMemberStatus(), "none");
+
+        Mockito.verify(mockPrepStmt, times(1)).setString(1, "user.unknown");
+        Mockito.verify(mockPrepStmt, times(1)).setString(1, "%platform%");
+        Mockito.verify(mockPrepStmt, times(1)).setString(2, "%platform%");
+        Mockito.verify(mockPrepStmt, times(0)).setInt(1, 0);
 
         jdbcConn.close();
     }
@@ -16313,12 +16333,34 @@ public class JDBCConnectionTest {
                 .setMemberExpiryDays(45).setDomainMemberExpiryDays(30);
         assertEquals(objects.get(0), object1);
 
-        // groups have no description column, so only the name is matched;
-        // the overlay join uses principal id 0 when no principal is supplied
+        Mockito.verify(mockPrepStmt, times(1)).setString(1, "%champions%");
 
-        Mockito.verify(mockPrepStmt, times(1)).setInt(1, 0);
-        Mockito.verify(mockPrepStmt, times(1)).setInt(2, 0);
-        Mockito.verify(mockPrepStmt, times(1)).setString(3, "%champions%");
+        jdbcConn.close();
+    }
+
+    @Test
+    public void testGetSelfServeGroupsUnknownPrincipalDiscovery() throws Exception {
+
+        Mockito.when(mockResultSet.next()).thenReturn(false, true, false);
+        Mockito.when(mockResultSet.getString(JDBCConsts.DB_COLUMN_DOMAIN_NAME)).thenReturn("domain1");
+        Mockito.when(mockResultSet.getString(JDBCConsts.DB_COLUMN_AS_GROUP_NAME)).thenReturn("group1");
+        Mockito.when(mockResultSet.getBoolean(JDBCConsts.DB_COLUMN_SELF_RENEW)).thenReturn(false);
+        Mockito.when(mockResultSet.getInt(JDBCConsts.DB_COLUMN_SELF_RENEW_MINS)).thenReturn(0);
+        Mockito.when(mockResultSet.getBoolean(JDBCConsts.DB_COLUMN_REVIEW_ENABLED)).thenReturn(false);
+        Mockito.when(mockResultSet.getBoolean(JDBCConsts.DB_COLUMN_AUDIT_ENABLED)).thenReturn(false);
+        Mockito.when(mockResultSet.getBoolean(JDBCConsts.DB_COLUMN_DELETE_PROTECTION)).thenReturn(false);
+        Mockito.when(mockResultSet.getInt(JDBCConsts.DB_COLUMN_MEMBER_EXPIRY_DAYS)).thenReturn(45);
+        Mockito.when(mockResultSet.getInt(JDBCConsts.DB_COLUMN_AS_DOMAIN_MEMBER_EXPIRY_DAYS)).thenReturn(30);
+
+        JDBCConnection jdbcConn = new JDBCConnection(mockConn, true);
+        SelfServeObjects selfServeObjects = jdbcConn.getSelfServeGroups("champions", "user.unknown", false);
+        assertNotNull(selfServeObjects);
+        assertEquals(selfServeObjects.getList().size(), 1);
+        assertEquals(selfServeObjects.getList().get(0).getMemberStatus(), "none");
+
+        Mockito.verify(mockPrepStmt, times(1)).setString(1, "user.unknown");
+        Mockito.verify(mockPrepStmt, times(1)).setString(1, "%champions%");
+        Mockito.verify(mockPrepStmt, times(0)).setInt(1, 0);
 
         jdbcConn.close();
     }
