@@ -8344,6 +8344,10 @@ public class JDBCConnection implements ObjectStoreConnection {
         return matchString == null ? "%" : "%" + matchString + "%";
     }
 
+    static SelfServeObjects emptySelfServeObjects() {
+        return new SelfServeObjects().setList(Collections.emptyList());
+    }
+
     @Override
     public SelfServeObjects getSelfServeRoles(String matchString, String principal, boolean memberOnly) throws ServerResourceException {
 
@@ -8351,6 +8355,9 @@ public class JDBCConnection implements ObjectStoreConnection {
 
         final String searchPattern = selfServeSearchPattern(matchString);
         final int principalId = StringUtil.isEmpty(principal) ? 0 : getPrincipalId(principal);
+        if (memberOnly && principalId == 0) {
+            return emptySelfServeObjects();
+        }
         final String sql = memberOnly ? SQL_GET_SELF_SERVE_ROLES_MEMBER : SQL_GET_SELF_SERVE_ROLES;
         List<SelfServeObject> selfServeRoles = new ArrayList<>();
         try (PreparedStatement ps = con.prepareStatement(sql)) {
@@ -8387,6 +8394,9 @@ public class JDBCConnection implements ObjectStoreConnection {
 
         final String searchPattern = selfServeSearchPattern(matchString);
         final int principalId = StringUtil.isEmpty(principal) ? 0 : getPrincipalId(principal);
+        if (memberOnly && principalId == 0) {
+            return emptySelfServeObjects();
+        }
         final String sql = memberOnly ? SQL_GET_SELF_SERVE_GROUPS_MEMBER : SQL_GET_SELF_SERVE_GROUPS;
         List<SelfServeObject> selfServeGroups = new ArrayList<>();
         try (PreparedStatement ps = con.prepareStatement(sql)) {

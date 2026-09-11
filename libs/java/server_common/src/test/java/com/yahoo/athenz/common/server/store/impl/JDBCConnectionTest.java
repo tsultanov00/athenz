@@ -16345,7 +16345,8 @@ public class JDBCConnectionTest {
         // four rows exercising each overlay branch: direct member, inherited via
         // group, pending request, and no relationship
 
-        Mockito.when(mockResultSet.next()).thenReturn(true, true, true, true, false);
+        Mockito.when(mockResultSet.next()).thenReturn(true, true, true, true, true, false);
+        Mockito.when(mockResultSet.getInt(1)).thenReturn(101);
         Mockito.when(mockResultSet.getString(JDBCConsts.DB_COLUMN_DOMAIN_NAME)).thenReturn("d");
         Mockito.when(mockResultSet.getString(JDBCConsts.DB_COLUMN_AS_ROLE_NAME))
                 .thenReturn("direct", "inherited", "pending", "none");
@@ -16364,7 +16365,7 @@ public class JDBCConnectionTest {
 
         JDBCConnection jdbcConn = new JDBCConnection(mockConn, true);
         // memberOnly=true exercises the additional filter clause
-        SelfServeObjects selfServeObjects = jdbcConn.getSelfServeRoles("x", null, true);
+        SelfServeObjects selfServeObjects = jdbcConn.getSelfServeRoles("x", "user.john", true);
         List<SelfServeObject> objects = selfServeObjects.getList();
         assertEquals(objects.size(), 4);
 
@@ -16383,6 +16384,32 @@ public class JDBCConnectionTest {
         assertEquals(objects.get(3).getMemberStatus(), "none");
         assertNull(objects.get(3).getExpiration());
         assertNull(objects.get(3).getInheritedFrom());
+
+        jdbcConn.close();
+    }
+
+    @Test
+    public void testGetSelfServeRolesMemberOnlyUnknownPrincipal() throws Exception {
+
+        Mockito.when(mockResultSet.next()).thenReturn(false);
+
+        JDBCConnection jdbcConn = new JDBCConnection(mockConn, true);
+        SelfServeObjects objects = jdbcConn.getSelfServeRoles("x", "user.unknown", true);
+        assertNotNull(objects);
+        assertTrue(objects.getList().isEmpty());
+
+        jdbcConn.close();
+    }
+
+    @Test
+    public void testGetSelfServeGroupsMemberOnlyUnknownPrincipal() throws Exception {
+
+        Mockito.when(mockResultSet.next()).thenReturn(false);
+
+        JDBCConnection jdbcConn = new JDBCConnection(mockConn, true);
+        SelfServeObjects objects = jdbcConn.getSelfServeGroups("x", "user.unknown", true);
+        assertNotNull(objects);
+        assertTrue(objects.getList().isEmpty());
 
         jdbcConn.close();
     }
